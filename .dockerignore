@@ -1,0 +1,5 @@
+.git*
+config.json*
+Dockerfile
+README.md
+SWAGGER.md
