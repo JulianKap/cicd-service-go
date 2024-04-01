@@ -1,6 +1,7 @@
 package service
 
 import (
+	"cicd-service-go/sources"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )
@@ -15,6 +16,10 @@ func startFramework() *echo.Echo {
 
 func initRoutes(e *echo.Echo) {
 	//handler := schedule.NewHandler()
+
+	project := e.Group("/project")
+	project.PUT("/create", sources.HandleProjectCreate)
+
 	//api := e.Group("/api")
 	//
 	//api.GET("/version", schedule.HandleVersion)

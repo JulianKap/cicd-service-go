@@ -11,11 +11,10 @@
     },
     "database": {
         "etcd": {
-            "host": "etcd",
-            "port": "2379",
-            "user": "user",
-            "password": "user_pass",
-            "service": "/test"
+            "endpoints" : [
+                "http://localhost:2379"
+            ],
+            "dialTimeout": "5"
         }
     },
     "logging": {

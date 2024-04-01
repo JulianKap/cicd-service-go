@@ -1,8 +1,10 @@
 package main
 
 import (
+	"cicd-service-go/init/db"
 	"cicd-service-go/service"
 	"cicd-service-go/utility"
+	"github.com/sirupsen/logrus"
 	"os"
 )
 
@@ -12,10 +14,20 @@ func init() {
 
 	utility.InitConfig()
 	utility.ConfigureLogger()
-	//etcd.InitInstanceDB()
+	db.InitInstanceETCD()
 }
 
 func main() {
+	// TODO: добавить трейс в логи
+	defer func() {
+		if r := recover(); r != nil {
+			// log panics forces exit
+			if _, ok := r.(*logrus.Entry); ok {
+				os.Exit(1)
+			}
+			panic(r)
+		}
+	}()
 	//go schedule.RunCron()
 
 	service.Start()
