@@ -9,17 +9,17 @@ import (
 
 var (
 	config     Config
-	member     Member
+	MemberInfo Member
 	memberChan chan bool
 )
 
 func InitManager() {
 	config = Config{
-		CLUSTER: ClusterConfig{
-			NAMESPACE:     viper.GetString("cluster.namespace_dcs"),
-			TTL:           viper.GetInt("cluster.ttl"),
-			LOOP_WAIT:     viper.GetUint("cluster.loop_wait"),
-			RETRY_TIMEOUT: viper.GetUint("cluster.retry_timeout"),
+		Cluster: ClusterConfig{
+			Namespace:    viper.GetString("cluster.namespace_dcs"),
+			TTL:          viper.GetInt("cluster.ttl"),
+			LoopWait:     viper.GetUint("cluster.loop_wait"),
+			RetryTimeout: viper.GetUint("cluster.retry_timeout"),
 		},
 	}
 
@@ -38,10 +38,10 @@ func RunManager() {
 		return
 	}
 
-	member.UUID = uniqueID
-	log.Debug("Generated new UUID: ", member.UUID)
+	MemberInfo.UUID = uniqueID
+	log.Debug("Generated new UUID: ", MemberInfo.UUID)
 
-	clusterTicker := time.NewTicker(time.Duration(config.CLUSTER.RETRY_TIMEOUT) * time.Second)
+	clusterTicker := time.NewTicker(time.Duration(config.Cluster.RetryTimeout) * time.Second)
 
 	for {
 		select {
@@ -70,27 +70,31 @@ func tasksCluster() error {
 	}
 
 	// Проверяем наличие актуального мастера
-	state, err := member.checkMaster(&config.CLUSTER)
+	master, err := MemberInfo.checkMaster(&config.Cluster)
 	if err != nil {
 		log.Error("tasksCluster error #2: ", err)
 		return err
 	}
 
-	if state.EXISTS { // Становимся воркером
+	if master.IAmMaster { //Мы являемся актуальным мастером
 
-		// Проверить UUID, чтоб совпадал
-		// Проверить, что есть актуальные воркеры по ttl. Если нет, то переключаемся в режим стенделоне
-
-		if err := member.setSlave(&config.CLUSTER); err != nil {
-			log.Error("tasksCluster error #3: ", err)
-			return err
-		}
-	} else { // Становимся мастером
-		if err := member.setMaster(&config.CLUSTER); err != nil {
+	} else if !master.Exists && !master.Unknown { // Становимся мастером
+		if err := MemberInfo.setMaster(&config.Cluster); err != nil {
 			log.Error("tasksCluster error #4: ", err)
 			return err
 		}
+	} else if master.Exists && !master.Unknown { // Мастер существует в кластере, поэтому становимся воркером
+
+		if err := MemberInfo.setSlave(&config.Cluster); err != nil {
+			log.Error("tasksCluster error #3: ", err)
+			return err
+		}
+	} else if master.Unknown {
+		log.Error("tasksCluster error #4: ", err)
+		return nil
 	}
+
+	// Проверить, что есть актуальные воркеры по ttl. Если нет, то переключаемся в режим стенделоне
 
 	return nil
 }

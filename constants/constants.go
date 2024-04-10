@@ -1,12 +1,12 @@
 package constants
 
 const (
-	PROJECTS    = "/projects"
-	MASTER      = "/master"
-	WORKERS     = "/workers"
-	STATUS      = "/status"
-	CONFIG      = "/config"
-	MASTER_UUID = ""
+	PROJECTS = "/projects"
+	MASTER   = "/master"
+	WORKERS  = "/workers"
+	STATUS   = "/status"
+	CONFIG   = "/config"
+	MEMBERS  = "/members"
 	MASTER_
 )
 

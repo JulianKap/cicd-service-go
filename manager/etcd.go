@@ -8,8 +8,27 @@ import (
 	"time"
 )
 
+// setConfigETCD добавляет конфигурацию в etcd
+func (c *Config) setConfigETCD(cli *clientv3.Client, key string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	workerJSON, err := json.Marshal(c)
+	if err != nil {
+		log.Error("setConfigETCD error #0: ", err)
+		return err
+	}
+
+	if _, err = cli.Put(ctx, key, string(workerJSON)); err != nil {
+		log.Error("setConfigETCD error #1: ", err)
+		return err
+	}
+
+	return nil
+}
+
 // setMasterETCD добавляет мастера в etcd
-func (m *Master) setMasterETCD(cli *clientv3.Client) error {
+func (m *Master) setMasterETCD(cli *clientv3.Client, key string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -26,7 +45,7 @@ func (m *Master) setMasterETCD(cli *clientv3.Client) error {
 		return err
 	}
 
-	_, err = cli.Put(ctx, m.KEY, string(masterJSON), clientv3.WithLease(resp.ID))
+	_, err = cli.Put(ctx, key, string(masterJSON), clientv3.WithLease(resp.ID))
 	if err != nil {
 		log.Error("setMasterETCD error #2: ", err)
 		return err
@@ -42,7 +61,7 @@ func (m *Master) setMasterETCD(cli *clientv3.Client) error {
 }
 
 // setWorkerETCD добавляет рабочего в etcd
-func (w *Worker) setWorkerETCD(cli *clientv3.Client) error {
+func (w *Worker) setWorkerETCD(cli *clientv3.Client, key string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -59,7 +78,7 @@ func (w *Worker) setWorkerETCD(cli *clientv3.Client) error {
 		return err
 	}
 
-	_, err = cli.Put(ctx, w.KEY, string(workerJSON), clientv3.WithLease(resp.ID))
+	_, err = cli.Put(ctx, key, string(workerJSON), clientv3.WithLease(resp.ID))
 	if err != nil {
 		log.Error("setWorkerETCD error #2: ", err)
 		return err
@@ -74,27 +93,6 @@ func (w *Worker) setWorkerETCD(cli *clientv3.Client) error {
 	return nil
 }
 
-//// setConfig добавляет конфигурацию в etcd
-//func setConfig(cli *clientv3.Client, workerID string) error {
-//	// Контекст для операций
-//	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-//	defer cancel()
-//
-//	// Преобразование структуры Worker в JSON
-//	workerJSON, err := json.Marshal(w)
-//	if err != nil {
-//		return err
-//	}
-//
-//	// Добавление данных в etcd
-//	_, err = cli.Put(ctx, fmt.Sprintf("/service-config/manager/workers/%s", workerID), string(workerJSON))
-//	if err != nil {
-//		return err
-//	}
-//
-//	return nil
-//}
-
 func isTTLValid(cli *clientv3.Client, key string) (bool, error) {
 	ctx := context.Background()
 
@@ -105,13 +103,13 @@ func isTTLValid(cli *clientv3.Client, key string) (bool, error) {
 		return false, err
 	}
 
-	// Проверка наличия ключа и его TTL
+	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 {
 		log.Info("isTTLValid info #1: key ", key, " not found")
 		return false, nil // Ключ не найден
 	}
 
-	// Извлечение лиза из ответа
+	// Извлечение Lease из ответа
 	leaseID := resp.Kvs[0].Lease
 
 	// Получение TTL для ключа
@@ -136,7 +134,37 @@ func isTTLValid(cli *clientv3.Client, key string) (bool, error) {
 	return false, nil
 }
 
-//func updateTTL(cli *clientv3.Client, key string, value string, ttl int64) error {
+// getMasterETCD получение мастера из etcd
+func getMasterETCD(cli *clientv3.Client, key string) (Master, error) {
+	master := Master{}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Получение значения ключа из etcd
+	resp, err := cli.Get(ctx, key)
+	if err != nil {
+		log.Error("getMasterETCD error #0: ", err)
+		return master, err
+	}
+
+	// Проверка наличия ключа
+	if len(resp.Kvs) == 0 { // Ключ не найден
+		log.Info("getMasterETCD info #1: key ", key, " not found")
+		return master, nil
+	} else if len(resp.Kvs) > 1 { // Больше одного ключа
+		log.Error("getMasterETCD error #2: key ", key, " get more than one key")
+	}
+
+	if err := json.Unmarshal(resp.Kvs[0].Value, &master); err != nil {
+		log.Error("getMasterETCD error #3: ", err)
+		return master, err
+	}
+
+	return master, nil
+}
+
+//func setKeyWithTTL(cli *clientv3.Client, key string, value string, ttl int64) error {
 //	// Контекст для отмены операций
 //	ctx := context.Background()
 //
@@ -159,3 +187,50 @@ func isTTLValid(cli *clientv3.Client, key string) (bool, error) {
 //
 //	return nil
 //}
+
+func (m *Members) setMembersETCD(cli *clientv3.Client, key string) error {
+	ctx := context.Background()
+
+	workerJSON, err := json.Marshal(m)
+	if err != nil {
+		log.Error("setMembersETCD error #0: ", err)
+		return err
+	}
+
+	_, err = cli.Put(ctx, key, string(workerJSON))
+	if err != nil {
+		log.Error("setMembersETCD error #1: ", err)
+		return err
+	}
+
+	return nil
+}
+
+func getMembersETCD(cli *clientv3.Client, key string) (Members, error) {
+	members := Members{}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Получение значения ключа из etcd
+	resp, err := cli.Get(ctx, key)
+	if err != nil {
+		log.Error("getMembersETCD error #0: ", err)
+		return members, err
+	}
+
+	// Проверка наличия ключа
+	if len(resp.Kvs) == 0 { // Ключ не найден
+		log.Info("getMembersETCD info #1: key ", key, " not found")
+		return members, nil
+	} else if len(resp.Kvs) > 1 { // Больше одного ключа
+		log.Error("getMembersETCD error #2: key ", key, " get more than one key")
+	}
+
+	if err := json.Unmarshal(resp.Kvs[0].Value, &members); err != nil {
+		log.Error("getMembersETCD error #3: ", err)
+		return members, err
+	}
+
+	return members, nil
+}
