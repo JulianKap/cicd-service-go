@@ -2,6 +2,7 @@ package main
 
 import (
 	"cicd-service-go/init/db"
+	"cicd-service-go/manager"
 	"cicd-service-go/service"
 	"cicd-service-go/utility"
 	"github.com/sirupsen/logrus"
@@ -12,9 +13,10 @@ func init() {
 	// set utc zone for time pkg (as server)
 	os.Setenv("TZ", "UTC")
 
-	utility.InitConfig()
-	utility.ConfigureLogger()
-	db.InitInstanceETCD()
+	utility.InitConfig()      // инициалищация конфигурации
+	utility.ConfigureLogger() // инициализация логирования
+	db.InitInstanceETCD()     // инициализация etcd
+	manager.InitManager()
 }
 
 func main() {
@@ -28,7 +30,9 @@ func main() {
 			panic(r)
 		}
 	}()
-	//go schedule.RunCron()
 
-	service.Start()
+	go manager.RunManager() // менеджер управления кластером
+	//go schedule.RunCron()		// запуск планировщика задач
+
+	service.Start() // запуск http сервера
 }

@@ -54,48 +54,6 @@ func (j *Job) createJob(cli *clientv3.Client) error {
 	return nil
 }
 
-//// createMaster добавляет мастера в etcd
-//func (m *Master) createMaster(cli *clientv3.Client, masterID string) error {
-//	// Контекст для операций
-//	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-//	defer cancel()
-//
-//	// Преобразование структуры Master в JSON
-//	masterJSON, err := json.Marshal(m)
-//	if err != nil {
-//		return err
-//	}
-//
-//	// Добавление данных в etcd
-//	_, err = cli.Put(ctx, fmt.Sprintf("/service-config/cluster/masters/%s", masterID), string(masterJSON))
-//	if err != nil {
-//		return err
-//	}
-//
-//	return nil
-//}
-//
-//// createWorker добавляет рабочего в etcd
-//func (w *Worker) createWorker(cli *clientv3.Client, workerID string) error {
-//	// Контекст для операций
-//	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-//	defer cancel()
-//
-//	// Преобразование структуры Worker в JSON
-//	workerJSON, err := json.Marshal(w)
-//	if err != nil {
-//		return err
-//	}
-//
-//	// Добавление данных в etcd
-//	_, err = cli.Put(ctx, fmt.Sprintf("/service-config/cluster/workers/%s", workerID), string(workerJSON))
-//	if err != nil {
-//		return err
-//	}
-//
-//	return nil
-//}
-
 // getLastID возвращает последний ID из etcd или 1, если ничего не найдено
 func getLastID(cli *clientv3.Client, key string) (int64, error) {
 	// Контекст для операций

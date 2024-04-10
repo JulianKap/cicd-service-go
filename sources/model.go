@@ -18,17 +18,6 @@ type Job struct {
 	Branch string `json:"branch"` // Ветка репозитория
 }
 
-// Master представляет информацию о мастере
-type Master struct {
-	TTL        string `json:"ttl"`
-	Standalone bool   `json:"standalone"`
-}
-
-// Worker представляет информацию о рабочих узлах
-type Worker struct {
-	// Добавьте необходимые поля для рабочего
-}
-
 type Response struct {
 	Message string `json:"message,omitempty"`
 }
