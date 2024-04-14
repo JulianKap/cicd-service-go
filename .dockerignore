@@ -1,5 +1,7 @@
 .git*
 config.json*
 Dockerfile
+docker-compose.yml
+docker-compose-ha.yml
 README.md
 SWAGGER.md

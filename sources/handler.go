@@ -60,7 +60,7 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 		if project.ProjectName == p.ProjectName {
 			log.Info("HandleProjectCreate info #3: project name already exists")
 			return ctx.JSON(http.StatusBadRequest, Response{
-				Message: "Project with the same name already exists",
+				Message: "Project name already exists",
 			})
 		}
 	}
@@ -168,7 +168,7 @@ func HandleProjectDeleteByID(ctx echo.Context) (err error) {
 	project := Project{
 		ID: projectID,
 	}
-	state, err := project.deleteProjectETCD(db.InstanceETCD)
+	state, message, err := project.deleteProjectETCD(db.InstanceETCD)
 	if err != nil {
 		log.Error("HandleProjectDeleteByID error #1: ", err)
 		return ctx.JSON(http.StatusBadRequest, ProjectResponse{
@@ -177,10 +177,10 @@ func HandleProjectDeleteByID(ctx echo.Context) (err error) {
 	}
 
 	if state {
-		return ctx.JSON(http.StatusOK, Response{Message: "Project delete"})
+		return ctx.JSON(http.StatusOK, Response{Message: message})
 	} else {
 		log.Info("HandleProjectDeleteByID info #2: not found project")
-		return ctx.JSON(http.StatusBadRequest, Response{Message: "Project not found"})
+		return ctx.JSON(http.StatusBadRequest, Response{Message: message})
 	}
 }
 
@@ -226,7 +226,7 @@ func HandleJobCreate(ctx echo.Context) (err error) {
 		if j.JobName == job.JobName {
 			log.Info("HandleJobCreate info #5: job name already exists")
 			return ctx.JSON(http.StatusBadRequest, Response{
-				Message: "Job with the same name already exists",
+				Message: "Job name already exists",
 			})
 		}
 	}

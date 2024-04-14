@@ -1,15 +1,5 @@
 FROM golang:1.22.1 AS builder
 
-#ENV GOPROXY=$GOPROXY
-#ENV GO111MODULE=on
-#ENV GOSUMDB=off
-#
-#RUN apt-get update && apt-get install -y \
-#    git \
-#    openssh-server \
-#    ca-certificates \
-#    wget
-
 WORKDIR /app
 
 COPY go.* ./

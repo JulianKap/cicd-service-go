@@ -112,11 +112,22 @@ func (p *Project) createProjectETCD(cli *clientv3.Client) error {
 }
 
 // deleteProjectETCD удалить проект
-func (p *Project) deleteProjectETCD(cli *clientv3.Client) (bool, error) {
+func (p *Project) deleteProjectETCD(cli *clientv3.Client) (bool, string, error) {
 	var projects Projects
 	if err := getProjectsETCD(cli, &projects); err != nil {
 		log.Error("deleteProjectETCD error #0: ", err)
-		return false, err
+		return false, "Error get project", err
+	}
+
+	var jobs Jobs
+	if err := p.getJobsETCD(cli, &jobs); err != nil {
+		log.Error("deleteProjectETCD error #1: ", err)
+		return false, "Error get jobs list for this project", err
+	}
+
+	if len(jobs.Jobs) > 0 {
+		log.Info("deleteProjectETCD info #2: this project has ", len(jobs.Jobs), " tasks. need to remove them first")
+		return false, "Error delete project. Has " + strconv.Itoa(len(jobs.Jobs)) + " tasks. Need to remove them first", nil
 	}
 
 	state := false
@@ -131,24 +142,28 @@ func (p *Project) deleteProjectETCD(cli *clientv3.Client) (bool, error) {
 
 	valueJSON, err := json.Marshal(newProjects)
 	if err != nil {
-		log.Error("deleteProjectETCD error #1: ", err)
-		return state, err
+		log.Error("deleteProjectETCD error #3: ", err)
+		return state, "Error encoding projects", err
 	}
 
 	// Обновляем список всех проектов
 	if err = etcd.SetKey(cli, Keys.Projects, string(valueJSON)); err != nil {
-		log.Error("deleteProjectETCD error #2: ", err)
-		return state, err
+		log.Error("deleteProjectETCD error #4: ", err)
+		return state, "Error update projects key", err
 	}
 
 	// Удаляем проект
 	key := Keys.Project + strconv.Itoa(p.ID)
 	if err = etcd.DelKey(cli, key); err != nil {
-		log.Error("deleteProjectETCD error #3: ", err)
-		return state, err
+		log.Error("deleteProjectETCD error #5: ", err)
+		return state, "Error delete project key", err
 	}
 
-	return state, nil
+	if state {
+		return state, "Project delete", nil
+	} else {
+		return state, "Project not found", nil
+	}
 }
 
 // getJobsETCD получить список всех задач проекта

@@ -101,27 +101,29 @@ func (c *ClusterConfig) updateMembers(m *Member) error {
 	newMembers := Members{}
 	newMembers.Members = append(newMembers.Members, *m)
 
-	if m.Master {
-		for _, mbr := range res.Members {
-			if mbr.UUID != m.UUID {
-				keyWorker := Keys.Workers + "/" + mbr.UUID
+	if res != nil {
+		if m.Master {
+			for _, mbr := range res.Members {
+				if mbr.UUID != m.UUID {
+					keyWorker := Keys.Workers + "/" + mbr.UUID
 
-				validate, err := etcd.IsTTLValid(db.InstanceETCD, keyWorker)
-				if err != nil {
-					log.Error("updateMembers error #1: ", err)
-					continue
-				}
+					validate, err := etcd.IsTTLValid(db.InstanceETCD, keyWorker)
+					if err != nil {
+						log.Error("updateMembers error #1: ", err)
+						continue
+					}
 
-				if validate {
-					newMembers.Members = append(newMembers.Members, mbr)
-					// todo: как вариант, нужно будет удалять вручную ключи воркеров
+					if validate {
+						newMembers.Members = append(newMembers.Members, mbr)
+						// todo: как вариант, нужно будет удалять вручную ключи воркеров
+					}
 				}
 			}
-		}
-	} else {
-		for _, mbr := range res.Members {
-			if mbr.UUID != m.UUID {
-				newMembers.Members = append(newMembers.Members, mbr)
+		} else {
+			for _, mbr := range res.Members {
+				if mbr.UUID != m.UUID {
+					newMembers.Members = append(newMembers.Members, mbr)
+				}
 			}
 		}
 	}
