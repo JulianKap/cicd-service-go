@@ -3,6 +3,7 @@ package main
 import (
 	"cicd-service-go/init/db"
 	"cicd-service-go/manager"
+	"cicd-service-go/schedule"
 	"cicd-service-go/service"
 	"cicd-service-go/utility"
 	"github.com/sirupsen/logrus"
@@ -32,8 +33,7 @@ func main() {
 		}
 	}()
 
-	go manager.RunManager() // менеджер управления кластером
-	//go schedule.RunCron()		// запуск планировщика задач
-
-	service.Start() // запуск http сервера
+	go manager.RunManager() // запуск менеджера управления кластером
+	go schedule.RunCron()   // запуск планировщика задач
+	service.Start()         // запуск http сервера
 }
