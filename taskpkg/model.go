@@ -2,18 +2,41 @@ package taskpkg
 
 import "time"
 
-// Task представляет информацию о текущей задаче
+// KeysDCS ключи в DCS
+type KeysDCS struct {
+	Tasks        string `json:"tasks"`
+	TasksHistory string `json:"tasks_history"`
+}
+
+// Task представляет информацию о текущей таске
 type Task struct {
 	// ID уникальный идентификатор задачи
-	ID string `json:"id"`
+	ID int `json:"id"`
 	// ProjectID идентификатор проекта, к которому относится задача
-	ProjectID string `json:"project_id"`
+	ProjectID int `json:"project_id"`
 	// JobID идентификатор задания, выполняемого задачей
-	JobID string `json:"job_id"`
+	JobID int `json:"job_id"`
 	// Name название задачи
 	Name string `json:"name,omitempty"`
 	// Status статус задачи (например, "running", "finished", "failed" и т.д.)
 	Status string `json:"status"`
 	// AddAt время создания задачи
 	CreateAt *time.Time `json:"create_at"`
+}
+
+// Tasks список тасок
+type Tasks struct {
+	Tasks []Task `json:"tasks"`
+}
+
+type TaskResponse struct {
+	Task    *Task   `json:"task"`
+	Message string  `json:"message,omitempty"`
+	Error   *string `json:"error,omitempty"`
+}
+
+type TasksResponse struct {
+	Tasks   *Tasks  `json:"tasks"`
+	Message string  `json:"message,omitempty"`
+	Error   *string `json:"error,omitempty"`
 }

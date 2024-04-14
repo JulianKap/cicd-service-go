@@ -1,6 +1,7 @@
 package service
 
 import (
+	"cicd-service-go/schedule"
 	"cicd-service-go/sources"
 	"github.com/labstack/echo/v4"
 	"net/http"
@@ -16,7 +17,7 @@ func startFramework() *echo.Echo {
 
 func initRoutes(e *echo.Echo) {
 	sources.InitHandler()
-	//handler := schedule.NewHandler()
+	schedule.InitHandler()
 
 	// Проекты
 	project := e.Group("/project")
@@ -34,6 +35,13 @@ func initRoutes(e *echo.Echo) {
 
 	// todo: сделать роуты для обновления проектов, задач
 	// В частности обновление названий, токенов, кредов
+
+	// Таски
+	tasks := project.Group("/tasks")
+	tasks.PUT("/create", schedule.HandleTaskCreate)
+	tasks.GET("/:id/all", schedule.HandleTasksGetList)
+	tasks.GET("/:id_project/:id_task", schedule.HandleTaskGetByID)
+	tasks.DELETE("/:id_project/:id_task", schedule.HandleTaskDeleteByID)
 
 	e.GET("/hc", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, nil)

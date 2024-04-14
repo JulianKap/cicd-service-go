@@ -32,7 +32,7 @@ func Start() {
 	//taskpkg.CloseAllTasks(ctx)
 
 	if err := echoInstance.Shutdown(ctx); err != nil {
-		log.Fatal("Start fatal #0: error shutdown http server for Echo: ", err)
+		log.Fatal("Start #0: error shutdown http server for Echo: ", err)
 	}
 }
 
@@ -43,7 +43,7 @@ func runEchoServer() *echo.Echo {
 		address := fmt.Sprintf("%s:%s", viper.GetString("listen.server.host"), viper.GetString("listen.server.port"))
 
 		if err := echoInstance.Start(address); err != nil && err != http.ErrServerClosed {
-			log.Fatal("runEchoServer fatal #0: error start http server for Echo: ", err)
+			log.Fatal("runEchoServer #0: error start http server for Echo: ", err)
 		}
 	}()
 
@@ -55,7 +55,7 @@ func runProfilingServer() {
 		address := fmt.Sprintf("%s:%s", viper.GetString("listen.pprof.host"), viper.GetString("listen.pprof.port"))
 
 		if err := http.ListenAndServe(address, nil); err != nil {
-			log.Fatal("runProfilingServer fatal #0: error start http server for profiling: ", err)
+			log.Fatal("runProfilingServer #0: error start http server for profiling: ", err)
 		}
 	}()
 }

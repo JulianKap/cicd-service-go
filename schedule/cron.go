@@ -7,7 +7,9 @@ import (
 	"time"
 )
 
-var CloseCronChan chan bool
+var (
+	CloseCronChan chan bool
+)
 
 func init() {
 	CloseCronChan = make(chan bool)
@@ -19,11 +21,11 @@ func RunCron() {
 	for {
 		select {
 		case <-CloseCronChan:
-			log.Info("RunCron info #0: сlose RunCron")
+			log.Info("RunCron #0: сlose RunCron")
 			return
 		case <-scheduleTicker.C:
 			if err := runSchedule(); err != nil {
-				log.Errorln("RunCron error #1: ", err)
+				log.Errorln("RunCron #1: ", err)
 			}
 		}
 	}
@@ -31,10 +33,10 @@ func RunCron() {
 
 func runSchedule() error {
 	if manager.MemberInfo.Master {
-		log.Debug("runSchedule debug #0: run scheduler as MASTER")
+		log.Debug("runSchedule #0: run scheduler as MASTER")
 
 	} else {
-		log.Debug("runSchedule debug #1: run scheduler as Worker")
+		log.Debug("runSchedule #1: run scheduler as Worker")
 
 	}
 

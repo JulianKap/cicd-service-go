@@ -21,7 +21,10 @@
         "level": "debug"
     },
     "schedule": {
-        "cron_timer_s": 600
+        "cron_timer_s": 600,
+        "tasks_parallel_workers": 5,
+        "tasks_history_count": 100,
+        "ttl_wait_tasks_s": 3600
     },
     "cluster": {
         "namespace_dcs": "/service",

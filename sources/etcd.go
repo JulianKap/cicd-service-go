@@ -4,29 +4,30 @@ import (
 	"cicd-service-go/constants"
 	"cicd-service-go/db/etcd"
 	"encoding/json"
+	"strconv"
+
 	log "github.com/sirupsen/logrus"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"strconv"
 )
 
 // getProjectsETCD получить список всех проектов из etcd
 func getProjectsETCD(cli *clientv3.Client, projects *Projects) error {
 	resp, err := etcd.GetKey(cli, Keys.Projects)
 	if err != nil {
-		log.Error("getProjectsETCD error #0: ", err)
+		log.Error("getProjectsETCD #0: ", err)
 		return err
 	}
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 { // Ключ не найден
-		log.Info("getProjectsETCD info #1: key ", Keys.Projects, " not found")
+		log.Info("getProjectsETCD #1: key ", Keys.Projects, " not found")
 		return nil
 	} else if len(resp.Kvs) > 1 { // Больше одного ключа
-		log.Warning("getProjectsETCD warn #2: key ", Keys.Projects, " get more than one key")
+		log.Warning("getProjectsETCD #2: key ", Keys.Projects, " get more than one key")
 	}
 
 	if err := json.Unmarshal(resp.Kvs[0].Value, projects); err != nil {
-		log.Error("getProjectsETCD error #3: ", err)
+		log.Error("getProjectsETCD #3: ", err)
 		return err
 	}
 
@@ -38,20 +39,20 @@ func getProjectETCD(cli *clientv3.Client, project *Project) (bool, error) {
 	key := Keys.Project + strconv.Itoa(project.ID)
 	resp, err := etcd.GetKey(cli, key)
 	if err != nil {
-		log.Error("getProjectETCD error #0: ", err)
+		log.Error("getProjectETCD #0: ", err)
 		return false, err
 	}
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 { // Ключ не найден
-		log.Info("getProjectETCD info #1: key ", key, " not found")
+		log.Info("getProjectETCD #1: key ", key, " not found")
 		return false, nil
 	} else if len(resp.Kvs) > 1 { // Больше одного ключа
-		log.Warning("getProjectETCD warn #2: key ", key, " get more than one key")
+		log.Warning("getProjectETCD #2: key ", key, " get more than one key")
 	}
 
 	if err := json.Unmarshal(resp.Kvs[0].Value, &project); err != nil {
-		log.Error("getProjectETCD error #3: ", err)
+		log.Error("getProjectETCD #3: ", err)
 		return false, err
 	}
 
@@ -62,7 +63,7 @@ func getProjectETCD(cli *clientv3.Client, project *Project) (bool, error) {
 func (p *Project) createProjectETCD(cli *clientv3.Client) error {
 	latestId, err := getLatestIdETCD(cli, Keys.LatestID)
 	if err != nil {
-		log.Error("createProjectETCD error #0: ", err)
+		log.Error("createProjectETCD #0: ", err)
 		return err
 	}
 
@@ -74,37 +75,37 @@ func (p *Project) createProjectETCD(cli *clientv3.Client) error {
 	// Добавление проекта в список всех проектов
 	var projects Projects
 	if err := getProjectsETCD(cli, &projects); err != nil {
-		log.Error("createProjectETCD error #1: ", err)
+		log.Error("createProjectETCD #1: ", err)
 		return err
 	}
 	projects.Projects = append(projects.Projects, *p)
 
 	projectsJSON, err := json.Marshal(projects)
 	if err != nil {
-		log.Error("createProjectETCD error #2: ", err)
+		log.Error("createProjectETCD #2: ", err)
 		return err
 	}
 
 	if err = etcd.SetKey(cli, Keys.Projects, string(projectsJSON)); err != nil {
-		log.Error("createProjectETCD error #3: ", err)
+		log.Error("createProjectETCD #3: ", err)
 		return err
 	}
 
 	// Добавление проекта в отдельный ключ
 	projectJSON, err := json.Marshal(p)
 	if err != nil {
-		log.Error("createProjectETCD error #4: ", err)
+		log.Error("createProjectETCD #4: ", err)
 		return err
 	}
 
 	if err = etcd.SetKey(cli, Keys.Project+strconv.Itoa(p.ID), string(projectJSON)); err != nil {
-		log.Error("createProjectETCD error #5: ", err)
+		log.Error("createProjectETCD #5: ", err)
 		return err
 	}
 
 	// Добавление последнего ID
 	if err = etcd.SetKey(cli, Keys.LatestID, strconv.Itoa(p.ID)); err != nil {
-		log.Error("createProjectETCD error #6: ", err)
+		log.Error("createProjectETCD #6: ", err)
 		return err
 	}
 
@@ -115,18 +116,18 @@ func (p *Project) createProjectETCD(cli *clientv3.Client) error {
 func (p *Project) deleteProjectETCD(cli *clientv3.Client) (bool, string, error) {
 	var projects Projects
 	if err := getProjectsETCD(cli, &projects); err != nil {
-		log.Error("deleteProjectETCD error #0: ", err)
+		log.Error("deleteProjectETCD #0: ", err)
 		return false, "Error get project", err
 	}
 
 	var jobs Jobs
 	if err := p.getJobsETCD(cli, &jobs); err != nil {
-		log.Error("deleteProjectETCD error #1: ", err)
+		log.Error("deleteProjectETCD #1: ", err)
 		return false, "Error get jobs list for this project", err
 	}
 
 	if len(jobs.Jobs) > 0 {
-		log.Info("deleteProjectETCD info #2: this project has ", len(jobs.Jobs), " tasks. need to remove them first")
+		log.Info("deleteProjectETCD #2: this project has ", len(jobs.Jobs), " tasks. need to remove them first")
 		return false, "Error delete project. Has " + strconv.Itoa(len(jobs.Jobs)) + " tasks. Need to remove them first", nil
 	}
 
@@ -142,20 +143,20 @@ func (p *Project) deleteProjectETCD(cli *clientv3.Client) (bool, string, error) 
 
 	valueJSON, err := json.Marshal(newProjects)
 	if err != nil {
-		log.Error("deleteProjectETCD error #3: ", err)
+		log.Error("deleteProjectETCD #3: ", err)
 		return state, "Error encoding projects", err
 	}
 
 	// Обновляем список всех проектов
 	if err = etcd.SetKey(cli, Keys.Projects, string(valueJSON)); err != nil {
-		log.Error("deleteProjectETCD error #4: ", err)
+		log.Error("deleteProjectETCD #4: ", err)
 		return state, "Error update projects key", err
 	}
 
 	// Удаляем проект
 	key := Keys.Project + strconv.Itoa(p.ID)
 	if err = etcd.DelKey(cli, key); err != nil {
-		log.Error("deleteProjectETCD error #5: ", err)
+		log.Error("deleteProjectETCD #5: ", err)
 		return state, "Error delete project key", err
 	}
 
@@ -171,20 +172,20 @@ func (p *Project) getJobsETCD(cli *clientv3.Client, jobs *Jobs) error {
 	key := Keys.Project + strconv.Itoa(p.ID) + constants.JOBS
 	resp, err := etcd.GetKey(cli, key)
 	if err != nil {
-		log.Error("getJobs error #0: ", err)
+		log.Error("getJobs #0: ", err)
 		return err
 	}
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 { // Ключ не найден
-		log.Info("getJobs info #1: key ", key, " not found")
+		log.Info("getJobs #1: key ", key, " not found")
 		return nil
 	} else if len(resp.Kvs) > 1 { // Больше одного ключа
-		log.Warning("getJobs warn #2: key ", key, " get more than one key")
+		log.Warning("getJobs #2: key ", key, " get more than one key")
 	}
 
 	if err := json.Unmarshal(resp.Kvs[0].Value, &jobs); err != nil {
-		log.Error("getJobs error #3: ", err)
+		log.Error("getJobs #3: ", err)
 		return err
 	}
 
@@ -196,20 +197,20 @@ func (p *Project) getJobETCD(cli *clientv3.Client, job *Job) (bool, error) {
 	key := Keys.Project + strconv.Itoa(p.ID) + constants.JOBS + strconv.Itoa(job.ID)
 	resp, err := etcd.GetKey(cli, key)
 	if err != nil {
-		log.Error("getJob error #0: ", err)
+		log.Error("getJob #0: ", err)
 		return false, err
 	}
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 { // Ключ не найден
-		log.Info("getJob info #1: key ", key, " not found")
+		log.Info("getJob #1: key ", key, " not found")
 		return false, nil
 	} else if len(resp.Kvs) > 1 { // Больше одного ключа
-		log.Warning("getJob warn #2: key ", key, " get more than one key")
+		log.Warning("getJob #2: key ", key, " get more than one key")
 	}
 
 	if err := json.Unmarshal(resp.Kvs[0].Value, &job); err != nil {
-		log.Error("getJob error #3: ", err)
+		log.Error("getJob #3: ", err)
 		return false, err
 	}
 
@@ -221,7 +222,7 @@ func (p *Project) createJobETCD(cli *clientv3.Client, j *Job) error {
 	keyLatestId := Keys.Project + strconv.Itoa(p.ID) + constants.JOB_LATEST_ID
 	latestId, err := getLatestIdETCD(cli, keyLatestId)
 	if err != nil {
-		log.Error("createJob error #0: ", err)
+		log.Error("createJob #0: ", err)
 		return err
 	}
 
@@ -233,39 +234,39 @@ func (p *Project) createJobETCD(cli *clientv3.Client, j *Job) error {
 	// Добавление задачи в список всех задач проекта
 	var jobs Jobs
 	if err := p.getJobsETCD(cli, &jobs); err != nil {
-		log.Error("createJob error #1: ", err)
+		log.Error("createJob #1: ", err)
 		return err
 	}
 	jobs.Jobs = append(jobs.Jobs, *j)
 
 	jobsJSON, err := json.Marshal(jobs)
 	if err != nil {
-		log.Error("createJob error #2: ", err)
+		log.Error("createJob #2: ", err)
 		return err
 	}
 
 	key := Keys.Project + strconv.Itoa(p.ID) + constants.JOBS
 	if err = etcd.SetKey(cli, key, string(jobsJSON)); err != nil {
-		log.Error("createJob error #3: ", err)
+		log.Error("createJob #3: ", err)
 		return err
 	}
 
 	// Добавление проекта в отдельный ключ
 	jobJSON, err := json.Marshal(j)
 	if err != nil {
-		log.Error("createJob error #4: ", err)
+		log.Error("createJob #4: ", err)
 		return err
 	}
 
 	key = Keys.Project + strconv.Itoa(p.ID) + constants.JOBS + strconv.Itoa(j.ID)
 	if err = etcd.SetKey(cli, key, string(jobJSON)); err != nil {
-		log.Error("createJob error #5: ", err)
+		log.Error("createJob #5: ", err)
 		return err
 	}
 
 	// Добавление последнего ID
 	if err = etcd.SetKey(cli, keyLatestId, strconv.Itoa(j.ID)); err != nil {
-		log.Error("createJob error #6: ", err)
+		log.Error("createJob #6: ", err)
 		return err
 	}
 
@@ -276,7 +277,7 @@ func (p *Project) createJobETCD(cli *clientv3.Client, j *Job) error {
 func (p *Project) deleteJobETCD(cli *clientv3.Client, j *Job) (bool, error) {
 	var jobs Jobs
 	if err := p.getJobsETCD(cli, &jobs); err != nil {
-		log.Error("deleteJobETCD error #0: ", err)
+		log.Error("deleteJobETCD #0: ", err)
 		return false, err
 	}
 
@@ -292,21 +293,21 @@ func (p *Project) deleteJobETCD(cli *clientv3.Client, j *Job) (bool, error) {
 
 	valueJSON, err := json.Marshal(newJobs)
 	if err != nil {
-		log.Error("deleteJobETCD error #1: ", err)
+		log.Error("deleteJobETCD #1: ", err)
 		return state, err
 	}
 
 	// Обновляем список всех задач
 	key := Keys.Project + strconv.Itoa(p.ID) + constants.JOBS
 	if err = etcd.SetKey(cli, key, string(valueJSON)); err != nil {
-		log.Error("deleteJobETCD error #2: ", err)
+		log.Error("deleteJobETCD #2: ", err)
 		return state, err
 	}
 
 	// Удаляем задачу
 	key = Keys.Project + strconv.Itoa(p.ID) + constants.JOBS + strconv.Itoa(j.ID)
 	if err = etcd.DelKey(cli, key); err != nil {
-		log.Error("deleteJobETCD error #3: ", err)
+		log.Error("deleteJobETCD #3: ", err)
 		return state, err
 	}
 
@@ -319,22 +320,22 @@ func getLatestIdETCD(cli *clientv3.Client, key string) (int, error) {
 
 	resp, err := etcd.GetKey(cli, key)
 	if err != nil {
-		log.Error("getLatestProjectID error #0: ", err)
+		log.Error("getLatestProjectID #0: ", err)
 		return id, err
 	}
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 { // Ключ не найден
-		log.Info("getLatestProjectID info #1: key ", key, " not found")
+		log.Info("getLatestProjectID #1: key ", key, " not found")
 		return id, nil
 	} else if len(resp.Kvs) > 1 { // Больше одного ключа
-		log.Warning("getLatestProjectID warn #2: key ", key, " get more than one key")
+		log.Warning("getLatestProjectID #2: key ", key, " get more than one key")
 	}
 
 	value := string(resp.Kvs[0].Value)
 	id, err = strconv.Atoi(value)
 	if err != nil {
-		log.Error("getLatestProjectID error #3: ", err)
+		log.Error("getLatestProjectID #3: ", err)
 		return id, err
 	}
 

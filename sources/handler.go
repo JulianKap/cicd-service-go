@@ -5,11 +5,12 @@ import (
 	"cicd-service-go/init/db"
 	"cicd-service-go/manager"
 	"cicd-service-go/utility"
+	"net/http"
+	"strconv"
+
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"net/http"
-	"strconv"
 )
 
 var (
@@ -26,14 +27,14 @@ func InitHandler() {
 }
 
 func HandleProjectCreate(ctx echo.Context) (err error) {
-	codeValPerm, respValPerm := validatePermission()
+	codeValPerm, respValPerm := ValidatePermission()
 	if codeValPerm != http.StatusOK {
 		return ctx.JSON(codeValPerm, respValPerm)
 	}
 
 	var project Project
 	if err := ctx.Bind(&project); err != nil {
-		log.Error("HandleProjectCreate error #0: ", err)
+		log.Error("HandleProjectCreate #0: ", err)
 		return ctx.JSON(http.StatusBadRequest, Response{
 			Message: "Error convert struct project",
 			Error:   utility.StringPtr(err.Error()),
@@ -41,7 +42,7 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 	}
 
 	if project.ProjectName == "" {
-		log.Info("HandleProjectCreate info #1: ", err)
+		log.Info("HandleProjectCreate #1: ", err)
 		return ctx.JSON(http.StatusBadRequest, Response{
 			Message: "Empty project name",
 		})
@@ -49,7 +50,7 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 
 	var projects Projects
 	if err := getProjectsETCD(db.InstanceETCD, &projects); err != nil {
-		log.Error("HandleProjectCreate error #2: ", err)
+		log.Error("HandleProjectCreate #2: ", err)
 		return ctx.JSON(http.StatusInternalServerError, Response{
 			Message: "Error get projects list for validate",
 			Error:   utility.StringPtr(err.Error()),
@@ -58,7 +59,7 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 
 	for _, p := range projects.Projects {
 		if project.ProjectName == p.ProjectName {
-			log.Info("HandleProjectCreate info #3: project name already exists")
+			log.Info("HandleProjectCreate #3: project name already exists")
 			return ctx.JSON(http.StatusBadRequest, Response{
 				Message: "Project name already exists",
 			})
@@ -67,7 +68,7 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 
 	token, err := utility.GenerateToken(16)
 	if err != nil {
-		log.Error("HandleProjectCreate error #4: ", err)
+		log.Error("HandleProjectCreate #4: ", err)
 		return ctx.JSON(http.StatusInternalServerError, Response{
 			Message: "Error generate access token",
 			Error:   utility.StringPtr(err.Error()),
@@ -76,7 +77,7 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 
 	project.APIKey = token
 	if err = project.createProjectETCD(db.InstanceETCD); err != nil {
-		log.Error("HandleProjectCreate error #5: ", err)
+		log.Error("HandleProjectCreate #5: ", err)
 		return ctx.JSON(http.StatusBadRequest, Response{
 			Message: "Error create project",
 			Error:   utility.StringPtr(err.Error()),
@@ -91,14 +92,14 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 
 // HandleProjectsGetList получить список всех проектов
 func HandleProjectsGetList(ctx echo.Context) (err error) {
-	codeValPerm, respValPerm := validatePermission()
+	codeValPerm, respValPerm := ValidatePermission()
 	if codeValPerm != http.StatusOK {
 		return ctx.JSON(codeValPerm, respValPerm)
 	}
 
 	var projects Projects
 	if err := getProjectsETCD(db.InstanceETCD, &projects); err != nil {
-		log.Error("HandleProjectsGetList error #0: ", err)
+		log.Error("HandleProjectsGetList #0: ", err)
 		return ctx.JSON(http.StatusInternalServerError, ProjectResponse{
 			Message: "Error get projects list",
 			Error:   utility.StringPtr(err.Error()),
@@ -112,14 +113,14 @@ func HandleProjectsGetList(ctx echo.Context) (err error) {
 
 // HandleProjectGetByID вывести статус по id
 func HandleProjectGetByID(ctx echo.Context) (err error) {
-	codeValPerm, respValPerm := validatePermission()
+	codeValPerm, respValPerm := ValidatePermission()
 	if codeValPerm != http.StatusOK {
 		return ctx.JSON(codeValPerm, respValPerm)
 	}
 
 	projectID, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		log.Error("HandleProjectGetByID error #0: ", err)
+		log.Error("HandleProjectGetByID #0: ", err)
 		return ctx.JSON(http.StatusBadRequest, ProjectResponse{
 			Message: "Error convert id project",
 			Error:   utility.StringPtr(err.Error()),
@@ -131,7 +132,7 @@ func HandleProjectGetByID(ctx echo.Context) (err error) {
 	}
 	state, err := getProjectETCD(db.InstanceETCD, &project)
 	if err != nil {
-		log.Error("HandleProjectGetByID error #1: ", err)
+		log.Error("HandleProjectGetByID #1: ", err)
 		return ctx.JSON(http.StatusInternalServerError, ProjectResponse{
 			Message: "Error get project",
 			Error:   utility.StringPtr(err.Error()),
@@ -143,7 +144,7 @@ func HandleProjectGetByID(ctx echo.Context) (err error) {
 			Project: &project,
 		})
 	} else {
-		log.Info("HandleProjectGetByID info #2: not found project")
+		log.Info("HandleProjectGetByID #2: not found project")
 		return ctx.JSON(http.StatusBadRequest, Response{
 			Message: "Not found project",
 		})
@@ -152,14 +153,14 @@ func HandleProjectGetByID(ctx echo.Context) (err error) {
 
 // HandleProjectDeleteByID удаление проекта по id
 func HandleProjectDeleteByID(ctx echo.Context) (err error) {
-	codeValPerm, respValPerm := validatePermission()
+	codeValPerm, respValPerm := ValidatePermission()
 	if codeValPerm != http.StatusOK {
 		return ctx.JSON(codeValPerm, respValPerm)
 	}
 
 	projectID, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		log.Error("HandleProjectDeleteByID error #0: ", err)
+		log.Error("HandleProjectDeleteByID #0: ", err)
 		return ctx.JSON(http.StatusBadRequest, ProjectResponse{
 			Error: utility.StringPtr(err.Error()),
 		})
@@ -170,7 +171,7 @@ func HandleProjectDeleteByID(ctx echo.Context) (err error) {
 	}
 	state, message, err := project.deleteProjectETCD(db.InstanceETCD)
 	if err != nil {
-		log.Error("HandleProjectDeleteByID error #1: ", err)
+		log.Error("HandleProjectDeleteByID #1: ", err)
 		return ctx.JSON(http.StatusBadRequest, ProjectResponse{
 			Error: utility.StringPtr(err.Error()),
 		})
@@ -179,21 +180,21 @@ func HandleProjectDeleteByID(ctx echo.Context) (err error) {
 	if state {
 		return ctx.JSON(http.StatusOK, Response{Message: message})
 	} else {
-		log.Info("HandleProjectDeleteByID info #2: not found project")
+		log.Info("HandleProjectDeleteByID #2: not found project")
 		return ctx.JSON(http.StatusBadRequest, Response{Message: message})
 	}
 }
 
 // HandleJobCreate создать задачу
 func HandleJobCreate(ctx echo.Context) (err error) {
-	codeValPerm, respValPerm := validatePermission()
+	codeValPerm, respValPerm := ValidatePermission()
 	if codeValPerm != http.StatusOK {
 		return ctx.JSON(codeValPerm, respValPerm)
 	}
 
 	var job Job
 	if err := ctx.Bind(&job); err != nil {
-		log.Error("HandleJobCreate error #0: ", err)
+		log.Error("HandleJobCreate #0: ", err)
 		return ctx.JSON(http.StatusBadRequest, Response{
 			Message: "Error convert struct job",
 			Error:   utility.StringPtr(err.Error()),
@@ -201,21 +202,21 @@ func HandleJobCreate(ctx echo.Context) (err error) {
 	}
 
 	if job.JobName == "" {
-		log.Info("HandleJobCreate info #1: ", err)
+		log.Info("HandleJobCreate #1: ", err)
 		return ctx.JSON(http.StatusBadRequest, Response{
 			Message: "Empty job name",
 		})
 	}
 
 	var project Project
-	codeValPrj, respValPrj := validateProjectById(&project, job.IdProject)
+	codeValPrj, respValPrj := ValidateProjectById(&project, job.IdProject)
 	if codeValPrj != http.StatusOK {
 		return ctx.JSON(codeValPrj, respValPrj)
 	}
 
 	var jobs Jobs
 	if err := project.getJobsETCD(db.InstanceETCD, &jobs); err != nil {
-		log.Error("HandleJobCreate error #4: ", err)
+		log.Error("HandleJobCreate #4: ", err)
 		return ctx.JSON(http.StatusInternalServerError, Response{
 			Message: "Error get jobs list for validate",
 			Error:   utility.StringPtr(err.Error()),
@@ -224,7 +225,7 @@ func HandleJobCreate(ctx echo.Context) (err error) {
 
 	for _, j := range jobs.Jobs {
 		if j.JobName == job.JobName {
-			log.Info("HandleJobCreate info #5: job name already exists")
+			log.Info("HandleJobCreate #5: job name already exists")
 			return ctx.JSON(http.StatusBadRequest, Response{
 				Message: "Job name already exists",
 			})
@@ -232,7 +233,7 @@ func HandleJobCreate(ctx echo.Context) (err error) {
 	}
 
 	if err = project.createJobETCD(db.InstanceETCD, &job); err != nil {
-		log.Error("HandleJobCreate error #6: ", err)
+		log.Error("HandleJobCreate #6: ", err)
 		return ctx.JSON(http.StatusBadRequest, Response{
 			Message: "Error create job",
 			Error:   utility.StringPtr(err.Error()),
@@ -247,20 +248,20 @@ func HandleJobCreate(ctx echo.Context) (err error) {
 
 // HandleJobsGetList получить список задач проекта
 func HandleJobsGetList(ctx echo.Context) (err error) {
-	codeValPerm, respValPerm := validatePermission()
+	codeValPerm, respValPerm := ValidatePermission()
 	if codeValPerm != http.StatusOK {
 		return ctx.JSON(codeValPerm, respValPerm)
 	}
 
 	var project Project
-	codeValPrj, respValPrj := validateProjectByIdContext(ctx, &project, "id")
+	codeValPrj, respValPrj := ValidateProjectByIdContext(ctx, &project, "id")
 	if codeValPrj != http.StatusOK {
 		return ctx.JSON(codeValPrj, respValPrj)
 	}
 
 	var jobs Jobs
 	if err := project.getJobsETCD(db.InstanceETCD, &jobs); err != nil {
-		log.Error("HandleJobsGetList error #0: ", err)
+		log.Error("HandleJobsGetList #0: ", err)
 		return ctx.JSON(http.StatusInternalServerError, ProjectResponse{
 			Message: "Error get jobs list",
 			Error:   utility.StringPtr(err.Error()),
@@ -274,20 +275,20 @@ func HandleJobsGetList(ctx echo.Context) (err error) {
 
 // HandleJobGetByID получить задачу проекта
 func HandleJobGetByID(ctx echo.Context) (err error) {
-	codeValidation, respValidation := validatePermission()
+	codeValidation, respValidation := ValidatePermission()
 	if codeValidation != http.StatusOK {
 		return ctx.JSON(codeValidation, respValidation)
 	}
 
 	var project Project
-	codeValPrj, respValPrj := validateProjectByIdContext(ctx, &project, "id_project")
+	codeValPrj, respValPrj := ValidateProjectByIdContext(ctx, &project, "id_project")
 	if codeValPrj != http.StatusOK {
 		return ctx.JSON(codeValPrj, respValPrj)
 	}
 
 	jobID, err := strconv.Atoi(ctx.Param("id_job"))
 	if err != nil {
-		log.Error("HandleJobGetByID error #0: ", err)
+		log.Error("HandleJobGetByID #0: ", err)
 		return ctx.JSON(http.StatusBadRequest, ProjectResponse{
 			Message: "Error convert id job",
 			Error:   utility.StringPtr(err.Error()),
@@ -300,7 +301,7 @@ func HandleJobGetByID(ctx echo.Context) (err error) {
 
 	state, err := project.getJobETCD(db.InstanceETCD, &job)
 	if err != nil {
-		log.Error("HandleJobGetByID error #1: ", err)
+		log.Error("HandleJobGetByID #1: ", err)
 		return ctx.JSON(http.StatusInternalServerError, ProjectResponse{
 			Message: "Error get job",
 			Error:   utility.StringPtr(err.Error()),
@@ -312,7 +313,7 @@ func HandleJobGetByID(ctx echo.Context) (err error) {
 			Job: &job,
 		})
 	} else {
-		log.Info("HandleJobGetByID info #2: not found job")
+		log.Info("HandleJobGetByID #2: not found job")
 		return ctx.JSON(http.StatusBadRequest, Response{
 			Message: "Not found job",
 		})
@@ -321,20 +322,20 @@ func HandleJobGetByID(ctx echo.Context) (err error) {
 
 // HandleJobDeleteByID удалить задачу по id
 func HandleJobDeleteByID(ctx echo.Context) (err error) {
-	codeValidation, respValidation := validatePermission()
+	codeValidation, respValidation := ValidatePermission()
 	if codeValidation != http.StatusOK {
 		return ctx.JSON(codeValidation, respValidation)
 	}
 
 	var project Project
-	codeValPrj, respValPrj := validateProjectByIdContext(ctx, &project, "id_project")
+	codeValPrj, respValPrj := ValidateProjectByIdContext(ctx, &project, "id_project")
 	if codeValPrj != http.StatusOK {
 		return ctx.JSON(codeValPrj, respValPrj)
 	}
 
 	jobID, err := strconv.Atoi(ctx.Param("id_job"))
 	if err != nil {
-		log.Error("HandleJobDeleteByID error #0: ", err)
+		log.Error("HandleJobDeleteByID #0: ", err)
 		return ctx.JSON(http.StatusBadRequest, ProjectResponse{
 			Message: "Error convert id job",
 			Error:   utility.StringPtr(err.Error()),
@@ -347,7 +348,7 @@ func HandleJobDeleteByID(ctx echo.Context) (err error) {
 
 	state, err := project.deleteJobETCD(db.InstanceETCD, &job)
 	if err != nil {
-		log.Error("HandleJobDeleteByID error #1: ", err)
+		log.Error("HandleJobDeleteByID #1: ", err)
 		return ctx.JSON(http.StatusBadRequest, ProjectResponse{
 			Error: utility.StringPtr(err.Error()),
 		})
@@ -356,48 +357,48 @@ func HandleJobDeleteByID(ctx echo.Context) (err error) {
 	if state {
 		return ctx.JSON(http.StatusOK, Response{Message: "Job delete"})
 	} else {
-		log.Info("HandleJobDeleteByID info #2: not found project")
+		log.Info("HandleJobDeleteByID #2: not found job")
 		return ctx.JSON(http.StatusBadRequest, Response{Message: "Job not found"})
 	}
 }
 
-// validatePermission валидация доступных прав для данного запущенного экземпляра сервиса
-func validatePermission() (int, Response) {
+// ValidatePermission валидация доступных прав для данного запущенного экземпляра сервиса
+func ValidatePermission() (int, Response) {
 	// Если мы не мастер, то отклоняем данный запрос
 	if !manager.MemberInfo.Master {
-		log.Info("validatePermission info #0: not master")
+		log.Info("validatePermission #0: not master")
 		return http.StatusMethodNotAllowed, Response{Message: "I am SLAVE! Slave not support management projects and jobs"}
 	}
 
 	// Если в режиме ro, то отклоняем данный запрос
 	if manager.MemberInfo.ReadOnly {
-		log.Info("validatePermission info #1: in read only state")
+		log.Info("validatePermission #1: in read only state")
 		return http.StatusMethodNotAllowed, Response{Message: "My state is read only"}
 	}
 
 	return http.StatusOK, Response{}
 }
 
-// validateProject проверка существования проекта и получение его по id из запроса
-func validateProjectByIdContext(ctx echo.Context, project *Project, id string) (int, ProjectResponse) {
+// ValidateProjectByIdContext проверка существования проекта и получение его по id из запроса
+func ValidateProjectByIdContext(ctx echo.Context, project *Project, id string) (int, ProjectResponse) {
 	projectID, err := strconv.Atoi(ctx.Param(id))
 	if err != nil {
-		log.Error("validateProjectByIdContext error #0: ", err)
+		log.Error("validateProjectByIdContext #0: ", err)
 		return http.StatusBadRequest, ProjectResponse{
 			Message: "Error convert id project",
 			Error:   utility.StringPtr(err.Error()),
 		}
 	}
 
-	return validateProjectById(project, projectID)
+	return ValidateProjectById(project, projectID)
 }
 
-// validateProjectById проверка существования проекта и получение его
-func validateProjectById(project *Project, id int) (int, ProjectResponse) {
+// ValidateProjectById проверка существования проекта и получение его
+func ValidateProjectById(project *Project, id int) (int, ProjectResponse) {
 	project.ID = id
 	state, err := getProjectETCD(db.InstanceETCD, project)
 	if err != nil {
-		log.Error("validateProjectById error #0: ", err)
+		log.Error("validateProjectById #0: ", err)
 		return http.StatusInternalServerError, ProjectResponse{
 			Message: "Error get project",
 			Error:   utility.StringPtr(err.Error()),
@@ -405,7 +406,7 @@ func validateProjectById(project *Project, id int) (int, ProjectResponse) {
 	}
 
 	if !state {
-		log.Info("validateProjectById info #1: ", err)
+		log.Info("validateProjectById #1: ", err)
 		return http.StatusBadRequest, ProjectResponse{
 			Message: "Not found project",
 		}

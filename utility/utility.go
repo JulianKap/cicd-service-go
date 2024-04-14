@@ -4,8 +4,9 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
-	"github.com/google/uuid"
 	"os"
+
+	"github.com/google/uuid"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -17,7 +18,7 @@ func InitConfig() {
 	viper.AddConfigPath(os.Getenv("CONFIGPATH"))
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Fatal("InitConfig error #1: fatal error config file: ", err)
+		log.Fatal("InitConfig #1: fatal error config file: ", err)
 	}
 }
 
@@ -40,7 +41,7 @@ func StringPtrToString(str *string) string {
 func GenerateUUID() (string, error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
-		log.Error("GenerateUUID error #0: ", err)
+		log.Error("GenerateUUID #0: ", err)
 		return "", err
 	}
 	return id.String(), nil
@@ -50,7 +51,7 @@ func GenerateUUID() (string, error) {
 func GenerateToken(length int) (string, error) {
 	randomBytes := make([]byte, length)
 	if _, err := rand.Read(randomBytes); err != nil {
-		log.Error("GenerateToken error #0: ", err)
+		log.Error("GenerateToken #0: ", err)
 		return "", err
 	}
 
@@ -62,7 +63,7 @@ func GenerateToken(length int) (string, error) {
 func GenerateTokenBase64(length int) (string, error) {
 	randomBytes := make([]byte, length)
 	if _, err := rand.Read(randomBytes); err != nil {
-		log.Error("GenerateToken error #0: ", err)
+		log.Error("GenerateToken #0: ", err)
 		return "", err
 	}
 

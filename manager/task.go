@@ -3,6 +3,7 @@ package manager
 import (
 	"cicd-service-go/db/etcd"
 	"cicd-service-go/init/db"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -15,10 +16,10 @@ func (c *Config) initializeCluster() error {
 // Если конфигурация отсутсвует, то добавляем ее
 func (c *Config) applyConfigurations() error {
 	if err := c.setConfigETCD(db.InstanceETCD); err != nil {
-		log.Error("applyConfigurations error #0: ", err)
+		log.Error("applyConfigurations #0: ", err)
 		return err
 	}
-	log.Debug("applyConfigurations debug #1: update configuration")
+	log.Debug("applyConfigurations #1: update configuration")
 
 	return nil
 }
@@ -33,7 +34,7 @@ func (c *ClusterConfig) checkMaster(m *Member) (MasterState, error) {
 
 	validate, err := etcd.IsTTLValid(db.InstanceETCD, Keys.Master)
 	if err != nil {
-		log.Error("checkMaster error #0: ", err)
+		log.Error("checkMaster #0: ", err)
 		state.Unknown = true
 		return state, err
 	}
@@ -44,12 +45,12 @@ func (c *ClusterConfig) checkMaster(m *Member) (MasterState, error) {
 
 		res, err := getMasterETCD(db.InstanceETCD)
 		if err != nil {
-			log.Error("checkMaster error #1: ", err)
+			log.Error("checkMaster #1: ", err)
 			return state, err
 		}
 
 		if res.UUID == m.UUID {
-			log.Debug("checkMaster debug #2: i am a MASTER")
+			log.Debug("checkMaster #2: i am a MASTER")
 			state.IAmMaster = true
 		}
 	}
@@ -65,7 +66,7 @@ func (c *ClusterConfig) setMaster(m *Member) error {
 	}
 
 	if err := master.setMasterETCD(db.InstanceETCD); err != nil {
-		log.Error("setMaster error #0: ", err)
+		log.Error("setMaster #0: ", err)
 		return err
 	}
 
@@ -82,7 +83,7 @@ func (c *ClusterConfig) setWorker(m *Member) error {
 	}
 
 	if err := worker.setWorkerETCD(db.InstanceETCD); err != nil {
-		log.Error("setWorker error #0: ", err)
+		log.Error("setWorker #0: ", err)
 		return err
 	}
 
@@ -94,7 +95,7 @@ func (c *ClusterConfig) setWorker(m *Member) error {
 func (c *ClusterConfig) updateMembers(m *Member) error {
 	res, err := getMembersETCD(db.InstanceETCD, Keys.Members)
 	if err != nil {
-		log.Error("updateMembers error #0: ", err)
+		log.Error("updateMembers #0: ", err)
 		return err
 	}
 
@@ -109,7 +110,7 @@ func (c *ClusterConfig) updateMembers(m *Member) error {
 
 					validate, err := etcd.IsTTLValid(db.InstanceETCD, keyWorker)
 					if err != nil {
-						log.Error("updateMembers error #1: ", err)
+						log.Error("updateMembers #1: ", err)
 						continue
 					}
 
@@ -129,7 +130,7 @@ func (c *ClusterConfig) updateMembers(m *Member) error {
 	}
 
 	if err := newMembers.setMembersETCD(db.InstanceETCD, Keys.Members); err != nil {
-		log.Error("updateMembers error #3: ", err)
+		log.Error("updateMembers #3: ", err)
 		return err
 	}
 

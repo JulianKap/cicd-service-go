@@ -3,6 +3,7 @@ package manager
 import (
 	"cicd-service-go/db/etcd"
 	"encoding/json"
+
 	log "github.com/sirupsen/logrus"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
@@ -11,12 +12,12 @@ import (
 func (c *Config) setConfigETCD(cli *clientv3.Client) error {
 	valueJSON, err := json.Marshal(c)
 	if err != nil {
-		log.Error("setConfigETCD error #0: ", err)
+		log.Error("setConfigETCD #0: ", err)
 		return err
 	}
 
 	if err = etcd.SetKey(cli, Keys.Config, string(valueJSON)); err != nil {
-		log.Error("setConfigETCD error #1: ", err)
+		log.Error("setConfigETCD #1: ", err)
 		return err
 	}
 
@@ -27,12 +28,12 @@ func (c *Config) setConfigETCD(cli *clientv3.Client) error {
 func (m *Master) setMasterETCD(cli *clientv3.Client) error {
 	valueJSON, err := json.Marshal(m)
 	if err != nil {
-		log.Error("setMasterETCD error #0: ", err)
+		log.Error("setMasterETCD #0: ", err)
 		return err
 	}
 
 	if err = etcd.SetKeyTTL(cli, Keys.Master, string(valueJSON), m.TTL); err != nil {
-		log.Error("setMasterETCD error #1: ", err)
+		log.Error("setMasterETCD #1: ", err)
 		return err
 	}
 
@@ -43,12 +44,12 @@ func (m *Master) setMasterETCD(cli *clientv3.Client) error {
 func (w *Worker) setWorkerETCD(cli *clientv3.Client) error {
 	valueJSON, err := json.Marshal(w)
 	if err != nil {
-		log.Error("setWorkerETCD error #0: ", err)
+		log.Error("setWorkerETCD #0: ", err)
 		return err
 	}
 
 	if err = etcd.SetKeyTTL(cli, Keys.Worker, string(valueJSON), w.TTL); err != nil {
-		log.Error("setWorkerETCD error #1: ", err)
+		log.Error("setWorkerETCD #1: ", err)
 		return err
 	}
 
@@ -59,12 +60,12 @@ func (w *Worker) setWorkerETCD(cli *clientv3.Client) error {
 func (m *Members) setMembersETCD(cli *clientv3.Client, key string) error {
 	valueJSON, err := json.Marshal(m)
 	if err != nil {
-		log.Error("setMembersETCD error #0: ", err)
+		log.Error("setMembersETCD #0: ", err)
 		return err
 	}
 
 	if err = etcd.SetKey(cli, Keys.Members, string(valueJSON)); err != nil {
-		log.Error("setMembersETCD error #1: ", err)
+		log.Error("setMembersETCD #1: ", err)
 		return err
 	}
 
@@ -75,21 +76,21 @@ func (m *Members) setMembersETCD(cli *clientv3.Client, key string) error {
 func getMasterETCD(cli *clientv3.Client) (*Master, error) {
 	resp, err := etcd.GetKey(cli, Keys.Master)
 	if err != nil {
-		log.Error("getMasterETCD error #0: ", err)
+		log.Error("getMasterETCD #0: ", err)
 		return nil, err
 	}
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 { // Ключ не найден
-		log.Info("getMasterETCD info #1: key ", Keys.Master, " not found")
+		log.Info("getMasterETCD #1: key ", Keys.Master, " not found")
 		return nil, nil
 	} else if len(resp.Kvs) > 1 { // Больше одного ключа
-		log.Warning("getMasterETCD warn #2: key ", Keys.Master, " get more than one key")
+		log.Warning("getMasterETCD #2: key ", Keys.Master, " get more than one key")
 	}
 
 	master := Master{}
 	if err := json.Unmarshal(resp.Kvs[0].Value, &master); err != nil {
-		log.Error("getMasterETCD error #3: ", err)
+		log.Error("getMasterETCD #3: ", err)
 		return nil, err
 	}
 
@@ -99,21 +100,21 @@ func getMasterETCD(cli *clientv3.Client) (*Master, error) {
 func getMembersETCD(cli *clientv3.Client, key string) (*Members, error) {
 	resp, err := etcd.GetKey(cli, Keys.Members)
 	if err != nil {
-		log.Error("getMembersETCD error #0: ", err)
+		log.Error("getMembersETCD #0: ", err)
 		return nil, err
 	}
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 { // Ключ не найден
-		log.Info("getMembersETCD info #1: key ", key, " not found")
+		log.Info("getMembersETCD #1: key ", key, " not found")
 		return nil, nil
 	} else if len(resp.Kvs) > 1 { // Больше одного ключа
-		log.Warning("getMembersETCD warn #2: key ", key, " get more than one key")
+		log.Warning("getMembersETCD #2: key ", key, " get more than one key")
 	}
 
 	members := Members{}
 	if err := json.Unmarshal(resp.Kvs[0].Value, &members); err != nil {
-		log.Error("getMembersETCD error #3: ", err)
+		log.Error("getMembersETCD #3: ", err)
 		return nil, err
 	}
 
@@ -123,7 +124,7 @@ func getMembersETCD(cli *clientv3.Client, key string) (*Members, error) {
 // delMemberETCD удалить члена кластера в etcd
 func (m *Member) delMemberETCD(cli *clientv3.Client, key string) error {
 	if err := etcd.DelKey(cli, key); err != nil {
-		log.Error("delMemberETCD error #0: ", err)
+		log.Error("delMemberETCD #0: ", err)
 		return err
 	}
 
