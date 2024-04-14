@@ -15,33 +15,25 @@ func startFramework() *echo.Echo {
 }
 
 func initRoutes(e *echo.Echo) {
+	sources.InitHandler()
 	//handler := schedule.NewHandler()
 
+	// Проекты
 	project := e.Group("/project")
 	project.PUT("/create", sources.HandleProjectCreate)
+	project.GET("/all", sources.HandleProjectsGetList)
+	project.GET("/:id", sources.HandleProjectGetByID)
+	project.DELETE("/:id", sources.HandleProjectDeleteByID)
 
-	//api := e.Group("/api")
-	//
-	//api.GET("/version", schedule.HandleVersion)
-	//api.GET("/master", schedule.HandleMaster)
-	//api.GET("/slave", schedule.HandleSlave)
-	//
-	////
-	//api.POST("/create", schedule.HandleScheduleByID)
-	//api.POST("/delete", schedule.HandleScheduleNew)
-	//
-	//api.PUT("/namespace/", schedule.HandleScheduleUpdateByID)
-	//api.DELETE("/:id", schedule.HandleScheduleDeleteByID)
-	//
-	//api.POST("/project", schedule.HandleScheduleByID)
-	//api.POST("/job", schedule.HandleScheduleNew)
-	//
-	//// Namespace
-	//
-	//// Job
-	//api.POST("/:id", schedule.HandleScheduleUpdateByID)
-	//// Удалить job
-	//api.DELETE("/:id", schedule.HandleScheduleDeleteByID)
+	// Задачи
+	jobs := project.Group("/jobs")
+	jobs.PUT("/create", sources.HandleJobCreate)
+	jobs.GET("/:id/all", sources.HandleJobsGetList)
+	jobs.GET("/:id_project/:id_job", sources.HandleJobGetByID)
+	jobs.DELETE("/:id_project/:id_job", sources.HandleJobDeleteByID)
+
+	// todo: сделать роуты для обновления проектов, задач
+	// В частности обновление названий, токенов, кредов
 
 	e.GET("/hc", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, nil)

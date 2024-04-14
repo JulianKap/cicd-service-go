@@ -1,25 +1,98 @@
 package sources
 
-// Project представляет информацию о проекте
-type Project struct {
-	ID          string `json:"id"`
-	APIKey      string `json:"api_key"`
-	ProjectName string `json:"project_name"`
-	//Jobs   map[string]Job `json:"jobs"`
+// KeysDCS ключи в DCS
+type KeysDCS struct {
+	// Projects ключ проектов
+	Projects string `json:"projects"`
+	LatestID string `json:"latest_id"`
+	Project  string `json:"project"`
+	Job      string `json:"job"`
 }
 
-// Job представляет информацию о задании
+// Credentials креды для авторизации
+type Credentials struct {
+	// Username пользователь
+	Username string `json:"username"`
+	// Password пароль пользователя
+	Password string `json:"password"`
+	// Token токен авторизации
+	Token string `json:"token,omitempty"`
+}
+
+// Project представляет информацию о проекте
+type Project struct {
+	// ID уникальный id проекта
+	ID int `json:"id,omitempty"`
+	// APIKey токен для работы с проектом
+	APIKey string `json:"api_key,omitempty"`
+	// ProjectName название проекта
+	ProjectName string `json:"project_name"`
+}
+
+// Projects представляет список всех проектов
+type Projects struct {
+	Projects []Project `json:"projects"`
+}
+
+// Job представляет информацию о задаче
 type Job struct {
-	ID        string `json:"id"`
-	JobName   string `json:"jobName"` // Название задачи
-	IdProject string `json:"idProject"`
-	URL       string `json:"url"` // URL до репозитория
-	//Credentials string `json:"credentials"`	// Креды для доступа к репозиторию todo: отдельную структуру для кредов
-	Branch string `json:"branch"` // Ветка репозитория
+	// ID уникальный id задачи
+	ID int `json:"id"`
+	// ID id проекта, к которому относится задача
+	IdProject int `json:"id_project"`
+	// Название задачи
+	JobName string `json:"job_name"`
+	// URL url репозитория
+	URL string `json:"url"`
+	// Branch ветка репозитория
+	Branch string `json:"branch"`
+	// Enable активность задачи
+	Enable bool `json:"enable"`
+	// Creds креды для доступа к репозиторию todo: отдельную структуру для кредов
+	Creds Credentials `json:"creds,omitempty"`
+}
+
+// Jobs представляет список всех задач проекта
+type Jobs struct {
+	Jobs []Job `json:"jobs"`
+}
+
+// ProjectFull представляет расширенную информацию о проекте
+type ProjectFull struct {
+	// ID уникальный id проекта
+	ID int `json:"id,omitempty"`
+	// APIKey токен для работы с проектом
+	APIKey string `json:"api_key,omitempty"`
+	// ProjectName название проекта
+	ProjectName string `json:"project_name"`
+	Jobs        Jobs   `json:"jobs,omitempty"`
 }
 
 type Response struct {
-	Message string `json:"message,omitempty"`
+	Message string  `json:"message"`
+	Error   *string `json:"error,omitempty"`
 }
 
-//todo: добавить валидации на ключевые поля в структурах
+type ProjectResponse struct {
+	Project *Project `json:"project"`
+	Message string   `json:"message,omitempty"`
+	Error   *string  `json:"error,omitempty"`
+}
+
+type ProjectsResponse struct {
+	Projects *Projects `json:"projects"`
+	Message  string    `json:"message,omitempty"`
+	Error    *string   `json:"error,omitempty"`
+}
+
+type JobResponse struct {
+	Job     *Job    `json:"job"`
+	Message string  `json:"message,omitempty"`
+	Error   *string `json:"error,omitempty"`
+}
+
+type JobsResponse struct {
+	Jobs    *Jobs   `json:"jobs"`
+	Message string  `json:"message,omitempty"`
+	Error   *string `json:"error,omitempty"`
+}

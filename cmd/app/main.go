@@ -11,7 +11,9 @@ import (
 
 func init() {
 	// set utc zone for time pkg (as server)
-	os.Setenv("TZ", "UTC")
+	if err := os.Setenv("TZ", "UTC"); err != nil {
+		return
+	}
 
 	utility.InitConfig()      // инициалищация конфигурации
 	utility.ConfigureLogger() // инициализация логирования
@@ -20,7 +22,6 @@ func init() {
 }
 
 func main() {
-	// TODO: добавить трейс в логи
 	defer func() {
 		if r := recover(); r != nil {
 			// log panics forces exit

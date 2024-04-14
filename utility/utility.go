@@ -1,6 +1,9 @@
 package utility
 
 import (
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/hex"
 	"github.com/google/uuid"
 	"os"
 
@@ -37,8 +40,33 @@ func StringPtrToString(str *string) string {
 func GenerateUUID() (string, error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
-		log.Error("GenerateUUID error #1: ", err)
+		log.Error("GenerateUUID error #0: ", err)
 		return "", err
 	}
 	return id.String(), nil
+}
+
+// GenerateToken генерирует токен
+func GenerateToken(length int) (string, error) {
+	randomBytes := make([]byte, length)
+	if _, err := rand.Read(randomBytes); err != nil {
+		log.Error("GenerateToken error #0: ", err)
+		return "", err
+	}
+
+	token := hex.EncodeToString(randomBytes)
+	return token, nil
+}
+
+// GenerateTokenBase64 генерирует токен в base64
+func GenerateTokenBase64(length int) (string, error) {
+	randomBytes := make([]byte, length)
+	if _, err := rand.Read(randomBytes); err != nil {
+		log.Error("GenerateToken error #0: ", err)
+		return "", err
+	}
+
+	// Кодирование случайной строки в base64
+	token := base64.URLEncoding.EncodeToString(randomBytes)
+	return token, nil
 }

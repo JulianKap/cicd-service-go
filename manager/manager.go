@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"cicd-service-go/constants"
 	"cicd-service-go/utility"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -8,9 +9,10 @@ import (
 )
 
 var (
-	config     Config
-	MemberInfo Member
-	memberChan chan bool
+	config      Config  // конфигурация
+	MemberInfo  Member  // состояние текущего экзмпляра
+	Keys        KeysDCS // ключи в DCS для управления кластером
+	managerChan chan bool
 )
 
 func InitManager() {
@@ -23,34 +25,40 @@ func InitManager() {
 		},
 	}
 
-	memberChan = make(chan bool)
-}
-
-func GetMemberChan() chan bool {
-	return memberChan
-}
-
-func RunManager() {
-	// Генерируем уникальный UUID запущенного экземпляра сервиса.
-	uniqueID, err := utility.GenerateUUID()
-	if err != nil {
-		log.Fatal("RunManager error #0: ", err)
-		return
+	Keys = KeysDCS{
+		Config:  config.Cluster.Namespace + constants.CONFIG,
+		Master:  config.Cluster.Namespace + constants.MASTER,
+		Workers: config.Cluster.Namespace + constants.WORKERS,
+		Members: config.Cluster.Namespace + constants.MEMBERS,
 	}
 
+	uniqueID, err := utility.GenerateUUID()
+	if err != nil {
+		log.Fatal("InitManager error #0: ", err)
+		return
+	}
 	MemberInfo.UUID = uniqueID
-	log.Debug("Generated new UUID: ", MemberInfo.UUID)
+	Keys.Worker = Keys.Workers + "/" + uniqueID
+
+	managerChan = make(chan bool)
+}
+
+//func GetMemberChan() chan bool {
+//	return managerChan
+//}
+
+func RunManager() {
+	log.Info("RunManager info #0: running UUID ", MemberInfo.UUID)
 
 	clusterTicker := time.NewTicker(time.Duration(config.Cluster.RetryTimeout) * time.Second)
-
 	for {
 		select {
-		case <-memberChan:
-			log.Infoln("Close checking cluster state")
+		case <-managerChan:
+			log.Info("RunManager info #0: close checking cluster state")
 			return
 		case <-clusterTicker.C:
 			if err := tasksCluster(); err != nil {
-				log.Debugln("RunManager error #1: ", err)
+				log.Error("RunManager error #1: ", err)
 			}
 		}
 	}
@@ -70,31 +78,45 @@ func tasksCluster() error {
 	}
 
 	// Проверяем наличие актуального мастера
-	master, err := MemberInfo.checkMaster(&config.Cluster)
+	state, err := config.Cluster.checkMaster(&MemberInfo)
 	if err != nil {
 		log.Error("tasksCluster error #2: ", err)
 		return err
 	}
 
-	if master.IAmMaster { //Мы являемся актуальным мастером
-
-	} else if !master.Exists && !master.Unknown { // Становимся мастером
-		if err := MemberInfo.setMaster(&config.Cluster); err != nil {
+	if state.Unknown {
+		MemberInfo.ReadOnly = true
+		log.Error("tasksCluster error #3: ", err)
+		return nil
+	} else if !state.Exists || state.IAmMaster { // Становимся (или обновляем состояние) мастером
+		if err := config.Cluster.setMaster(&MemberInfo); err != nil {
 			log.Error("tasksCluster error #4: ", err)
 			return err
 		}
-	} else if master.Exists && !master.Unknown { // Мастер существует в кластере, поэтому становимся воркером
+		MemberInfo.Master = true
 
-		if err := MemberInfo.setSlave(&config.Cluster); err != nil {
-			log.Error("tasksCluster error #3: ", err)
-			return err
+		if !state.IAmMaster {
+			log.Info("tasksCluster info #5: i became a MASTER!")
 		}
-	} else if master.Unknown {
-		log.Error("tasksCluster error #4: ", err)
-		return nil
+	} else { // становимся слейвом
+		MemberInfo.Master = false
+		log.Debug("tasksCluster debug #6: i became a SLAVE!")
 	}
 
-	// Проверить, что есть актуальные воркеры по ttl. Если нет, то переключаемся в режим стенделоне
+	if err := config.Cluster.setWorker(&MemberInfo); err != nil {
+		log.Error("tasksCluster error #7: ", err)
+		return err
+	}
+
+	// Обновляем список членов кластера и удаляем старые (при просроченном TTL)
+	if err := config.Cluster.updateMembers(&MemberInfo); err != nil {
+		log.Error("tasksCluster error #8: ", err)
+		return err
+	}
+
+	// Проверять таски для каждого воркера перед удалением. Либо удалять, а в шедулере будет своя логика распределения незаконченных задач
+
+	MemberInfo.ReadOnly = false
 
 	return nil
 }
