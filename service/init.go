@@ -1,6 +1,7 @@
 package service
 
 import (
+	"cicd-service-go/manager"
 	"cicd-service-go/schedule"
 	"cicd-service-go/sources"
 	"github.com/labstack/echo/v4"
@@ -43,6 +44,15 @@ func initRoutes(e *echo.Echo) {
 	tasks.GET("/:id_project/:id_task", schedule.HandleTaskGetByID)
 	tasks.DELETE("/:id_project/:id_task", schedule.HandleTaskDeleteByID)
 
+	// Проверка на мастера
+	e.GET("/master", func(c echo.Context) error {
+		if manager.MemberInfo.Master {
+			return c.JSON(http.StatusOK, manager.MemberInfo)
+		}
+		return c.JSON(http.StatusBadRequest, manager.MemberInfo)
+	})
+
+	// Healthcheck
 	e.GET("/hc", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, nil)
 	})
