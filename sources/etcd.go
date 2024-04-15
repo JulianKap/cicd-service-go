@@ -61,7 +61,7 @@ func getProjectETCD(cli *clientv3.Client, project *Project) (bool, error) {
 
 // createProjectETCD создание нового проекта
 func (p *Project) createProjectETCD(cli *clientv3.Client) error {
-	latestId, err := getLatestIdETCD(cli, Keys.LatestID)
+	latestId, err := GetLatestIdETCD(cli, Keys.LatestID)
 	if err != nil {
 		log.Error("createProjectETCD #0: ", err)
 		return err
@@ -220,7 +220,7 @@ func (p *Project) getJobETCD(cli *clientv3.Client, job *Job) (bool, error) {
 // createJobETCD добавление задачи
 func (p *Project) createJobETCD(cli *clientv3.Client, j *Job) error {
 	keyLatestId := Keys.Project + strconv.Itoa(p.ID) + constants.JOB_LATEST_ID
-	latestId, err := getLatestIdETCD(cli, keyLatestId)
+	latestId, err := GetLatestIdETCD(cli, keyLatestId)
 	if err != nil {
 		log.Error("createJob #0: ", err)
 		return err
@@ -314,8 +314,8 @@ func (p *Project) deleteJobETCD(cli *clientv3.Client, j *Job) (bool, error) {
 	return state, nil
 }
 
-// getLatestIdETCD получить последний id проекта (или задачи)
-func getLatestIdETCD(cli *clientv3.Client, key string) (int, error) {
+// GetLatestIdETCD получить последний id проекта (или задачи)
+func GetLatestIdETCD(cli *clientv3.Client, key string) (int, error) {
 	id := -1
 
 	resp, err := etcd.GetKey(cli, key)

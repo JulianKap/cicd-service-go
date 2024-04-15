@@ -38,7 +38,19 @@ services:
     volumes:
       - ./configs/config-test.json:/app/config.json
     ports:
-      - 4000:3000
+      - 3010:3000
     restart: always
     depends_on:
       - etcd
+
+  cicd-service-03:
+    build: .
+    container_name: cicd-service-03
+    volumes:
+      - ./configs/config-test.json:/app/config.json
+    ports:
+      - 3020:3000
+    restart: always
+    depends_on:
+      - etcd
+

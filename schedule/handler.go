@@ -22,6 +22,8 @@ func InitHandler() {
 	Keys = taskpkg.KeysDCS{
 		Tasks:        namespace + constants.PROJECTS_TASKS,
 		TasksHistory: namespace + constants.PROJECTS_TASKS_HISTORY,
+		TaskProject:  namespace + constants.PROJECTS,
+		TaskLatestId: namespace + constants.PROJECTS_TASKS_LATEST_ID,
 	}
 }
 
@@ -41,22 +43,32 @@ func HandleTaskCreate(ctx echo.Context) (err error) {
 		})
 	}
 
-	var project sources.Project
-	codeValPrj, respValPrj := sources.ValidateProjectById(&project, task.ProjectID)
+	// Проверка существования проекта
+	project := sources.Project{ID: task.ProjectID}
+	codeValPrj, respValPrj := sources.ValidateProject(&project)
 	if codeValPrj != http.StatusOK {
 		return ctx.JSON(codeValPrj, respValPrj)
 	}
 
-	//var tasks taskpkg.Tasks
-	//if err := getTasksETCD(db.InstanceETCD, &project, &tasks); err != nil {
-	//	log.Error("HandleTaskCreate #1: ", err)
-	//	return ctx.JSON(http.StatusInternalServerError, taskpkg.TasksResponse{
-	//		Message: "Error get tasks list",
-	//		Error:   utility.StringPtr(err.Error()),
-	//	})
-	//}
+	// Проверка существования задачи
+	job := sources.Job{ID: task.JobID}
+	codeValJob, respValJob := sources.ValidateJob(&project, &job)
+	if codeValJob != http.StatusOK {
+		return ctx.JSON(codeValJob, respValJob)
+	}
 
-	return nil
+	if err := createTaskETCD(db.InstanceETCD, &project, &task); err != nil {
+		log.Error("HandleTaskCreate #1: ", err)
+		return ctx.JSON(http.StatusBadRequest, taskpkg.TasksResponse{
+			Message: "Error create task",
+			Error:   utility.StringPtr(err.Error()),
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, taskpkg.TaskResponse{
+		Task:    &task,
+		Message: "Task create",
+	})
 }
 
 // HandleTasksGetList получить список всех тасок
@@ -67,7 +79,7 @@ func HandleTasksGetList(ctx echo.Context) (err error) {
 	}
 
 	var project sources.Project
-	codeValPrj, respValPrj := sources.ValidateProjectByIdContext(ctx, &project, "id")
+	codeValPrj, respValPrj := sources.ValidateProjectById(ctx, &project, "id")
 	if codeValPrj != http.StatusOK {
 		return ctx.JSON(codeValPrj, respValPrj)
 	}
@@ -94,7 +106,7 @@ func HandleTaskGetByID(ctx echo.Context) (err error) {
 	}
 
 	var project sources.Project
-	codeValPrj, respValPrj := sources.ValidateProjectByIdContext(ctx, &project, "id_project")
+	codeValPrj, respValPrj := sources.ValidateProjectById(ctx, &project, "id_project")
 	if codeValPrj != http.StatusOK {
 		return ctx.JSON(codeValPrj, respValPrj)
 	}
@@ -109,10 +121,11 @@ func HandleTaskGetByID(ctx echo.Context) (err error) {
 	}
 
 	task := taskpkg.Task{
-		ID: taskID,
+		ID:        taskID,
+		ProjectID: project.ID,
 	}
 
-	state, err := getTaskETCD(db.InstanceETCD, &project, &task)
+	state, err := getTaskETCD(db.InstanceETCD, &task)
 	if err != nil {
 		log.Error("HandleTaskGetByID #1: ", err)
 		return ctx.JSON(http.StatusInternalServerError, taskpkg.TaskResponse{
@@ -141,7 +154,7 @@ func HandleTaskDeleteByID(ctx echo.Context) (err error) {
 	}
 
 	var project sources.Project
-	codeValPrj, respValPrj := sources.ValidateProjectByIdContext(ctx, &project, "id_project")
+	codeValPrj, respValPrj := sources.ValidateProjectById(ctx, &project, "id_project")
 	if codeValPrj != http.StatusOK {
 		return ctx.JSON(codeValPrj, respValPrj)
 	}
@@ -156,7 +169,8 @@ func HandleTaskDeleteByID(ctx echo.Context) (err error) {
 	}
 
 	task := taskpkg.Task{
-		ID: taskID,
+		ID:        taskID,
+		ProjectID: project.ID,
 	}
 
 	state, err := deleteTaskETCD(db.InstanceETCD, &project, &task)

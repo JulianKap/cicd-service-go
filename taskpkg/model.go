@@ -1,11 +1,19 @@
 package taskpkg
 
-import "time"
+import (
+	"time"
+)
 
 // KeysDCS ключи в DCS
 type KeysDCS struct {
-	Tasks        string `json:"tasks"`
+	// Tasks все таски
+	Tasks string `json:"tasks"`
+	// TasksHistory история выполения тасок
 	TasksHistory string `json:"tasks_history"`
+	// TaskProject таски конкретного проекта
+	TaskProject string `json:"task_project"`
+	// TaskLatestId крайний id таски
+	TaskLatestId string `json:"task_latest_id"`
 }
 
 // Task представляет информацию о текущей таске

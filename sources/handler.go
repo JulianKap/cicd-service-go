@@ -208,8 +208,8 @@ func HandleJobCreate(ctx echo.Context) (err error) {
 		})
 	}
 
-	var project Project
-	codeValPrj, respValPrj := ValidateProjectById(&project, job.IdProject)
+	project := Project{ID: job.IdProject}
+	codeValPrj, respValPrj := ValidateProject(&project)
 	if codeValPrj != http.StatusOK {
 		return ctx.JSON(codeValPrj, respValPrj)
 	}
@@ -254,7 +254,7 @@ func HandleJobsGetList(ctx echo.Context) (err error) {
 	}
 
 	var project Project
-	codeValPrj, respValPrj := ValidateProjectByIdContext(ctx, &project, "id")
+	codeValPrj, respValPrj := ValidateProjectById(ctx, &project, "id")
 	if codeValPrj != http.StatusOK {
 		return ctx.JSON(codeValPrj, respValPrj)
 	}
@@ -281,7 +281,7 @@ func HandleJobGetByID(ctx echo.Context) (err error) {
 	}
 
 	var project Project
-	codeValPrj, respValPrj := ValidateProjectByIdContext(ctx, &project, "id_project")
+	codeValPrj, respValPrj := ValidateProjectById(ctx, &project, "id_project")
 	if codeValPrj != http.StatusOK {
 		return ctx.JSON(codeValPrj, respValPrj)
 	}
@@ -328,7 +328,7 @@ func HandleJobDeleteByID(ctx echo.Context) (err error) {
 	}
 
 	var project Project
-	codeValPrj, respValPrj := ValidateProjectByIdContext(ctx, &project, "id_project")
+	codeValPrj, respValPrj := ValidateProjectById(ctx, &project, "id_project")
 	if codeValPrj != http.StatusOK {
 		return ctx.JSON(codeValPrj, respValPrj)
 	}
@@ -379,26 +379,11 @@ func ValidatePermission() (int, Response) {
 	return http.StatusOK, Response{}
 }
 
-// ValidateProjectByIdContext проверка существования проекта и получение его по id из запроса
-func ValidateProjectByIdContext(ctx echo.Context, project *Project, id string) (int, ProjectResponse) {
-	projectID, err := strconv.Atoi(ctx.Param(id))
+// ValidateProject проверка существования проекта и получение его
+func ValidateProject(p *Project) (int, ProjectResponse) {
+	state, err := getProjectETCD(db.InstanceETCD, p)
 	if err != nil {
-		log.Error("validateProjectByIdContext #0: ", err)
-		return http.StatusBadRequest, ProjectResponse{
-			Message: "Error convert id project",
-			Error:   utility.StringPtr(err.Error()),
-		}
-	}
-
-	return ValidateProjectById(project, projectID)
-}
-
-// ValidateProjectById проверка существования проекта и получение его
-func ValidateProjectById(project *Project, id int) (int, ProjectResponse) {
-	project.ID = id
-	state, err := getProjectETCD(db.InstanceETCD, project)
-	if err != nil {
-		log.Error("validateProjectById #0: ", err)
+		log.Error("ValidateProject #0: ", err)
 		return http.StatusInternalServerError, ProjectResponse{
 			Message: "Error get project",
 			Error:   utility.StringPtr(err.Error()),
@@ -406,11 +391,47 @@ func ValidateProjectById(project *Project, id int) (int, ProjectResponse) {
 	}
 
 	if !state {
-		log.Info("validateProjectById #1: ", err)
+		log.Info("ValidateProject #1: ", err)
 		return http.StatusBadRequest, ProjectResponse{
 			Message: "Not found project",
 		}
 	}
 
 	return http.StatusOK, ProjectResponse{}
+}
+
+// ValidateProjectById проверка существования проекта и получение его по id из запроса
+func ValidateProjectById(ctx echo.Context, p *Project, id string) (int, ProjectResponse) {
+	projectID, err := strconv.Atoi(ctx.Param(id))
+	if err != nil {
+		log.Error("ValidateProjectById #0: ", err)
+		return http.StatusBadRequest, ProjectResponse{
+			Message: "Error convert id project",
+			Error:   utility.StringPtr(err.Error()),
+		}
+	}
+
+	p.ID = projectID
+	return ValidateProject(p)
+}
+
+// ValidateJob проверка существования задачи и получение ее
+func ValidateJob(p *Project, j *Job) (int, JobResponse) {
+	state, err := p.getJobETCD(db.InstanceETCD, j)
+	if err != nil {
+		log.Error("ValidateJob #0: ", err)
+		return http.StatusInternalServerError, JobResponse{
+			Message: "Error get job",
+			Error:   utility.StringPtr(err.Error()),
+		}
+	}
+
+	if !state {
+		log.Info("ValidateJob #1: ", err)
+		return http.StatusBadRequest, JobResponse{
+			Message: "Not found job",
+		}
+	}
+
+	return http.StatusOK, JobResponse{}
 }
