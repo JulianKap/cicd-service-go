@@ -35,10 +35,30 @@ func runSchedule() error {
 	if manager.MemberInfo.Master {
 		log.Debug("runSchedule #0: run scheduler as MASTER")
 
-	} else {
-		log.Debug("runSchedule #1: run scheduler as Worker")
+		standalone, err := tasksScheduler()
+		if err != nil {
+			log.Error("runSchedule #1: ", err)
+			return err
+		}
 
+		if !standalone {
+			return nil
+		}
+
+		log.Debug("runSchedule #2: continuation of work in mode STANDALONE")
 	}
+
+	log.Debug("runSchedule #3: run scheduler for Worker")
+
+	if err := tasksWorker(); err != nil {
+		log.Error("runSchedule #1: ", err)
+		return err
+	}
+
+	// Получаем свои задачи
+	// Запускаем
+	// Использовать алгоритм пайплайн
+	//
 
 	return nil
 }

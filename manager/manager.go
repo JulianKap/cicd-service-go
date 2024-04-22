@@ -10,14 +10,14 @@ import (
 )
 
 var (
-	config      Config  // конфигурация
+	Conf        Config  // конфигурация
 	MemberInfo  Member  // состояние текущего экзмпляра
 	Keys        KeysDCS // ключи в DCS для управления кластером
 	managerChan chan bool
 )
 
 func InitManager() {
-	config = Config{
+	Conf = Config{
 		Cluster: ClusterConfig{
 			Namespace:    viper.GetString("cluster.namespace_dcs"),
 			TTL:          viper.GetInt("cluster.ttl"),
@@ -27,10 +27,10 @@ func InitManager() {
 	}
 
 	Keys = KeysDCS{
-		Config:  config.Cluster.Namespace + constants.CONFIG,
-		Master:  config.Cluster.Namespace + constants.MASTER,
-		Workers: config.Cluster.Namespace + constants.WORKERS,
-		Members: config.Cluster.Namespace + constants.MEMBERS,
+		Config:  Conf.Cluster.Namespace + constants.CONFIG,
+		Master:  Conf.Cluster.Namespace + constants.MASTER,
+		Workers: Conf.Cluster.Namespace + constants.WORKERS,
+		Members: Conf.Cluster.Namespace + constants.MEMBERS,
 	}
 
 	uniqueID, err := utility.GenerateUUID()
@@ -51,7 +51,7 @@ func InitManager() {
 func RunManager() {
 	log.Info("RunManager #0: running UUID ", MemberInfo.UUID)
 
-	clusterTicker := time.NewTicker(time.Duration(config.Cluster.RetryTimeout) * time.Second)
+	clusterTicker := time.NewTicker(time.Duration(Conf.Cluster.RetryTimeout) * time.Second)
 	for {
 		select {
 		case <-managerChan:
@@ -67,19 +67,19 @@ func RunManager() {
 
 func tasksCluster() error {
 	// Инициализация кластера
-	if err := config.initializeCluster(); err != nil {
+	if err := Conf.initializeCluster(); err != nil {
 		log.Error("tasksCluster #0: ", err)
 		return err
 	}
 
 	// Проверяем конфигурацию сервиса в etcd
-	if err := config.applyConfigurations(); err != nil {
+	if err := Conf.applyConfigurations(); err != nil {
 		log.Error("tasksCluster #1: ", err)
 		return err
 	}
 
 	// Проверяем наличие актуального мастера
-	state, err := config.Cluster.checkMaster(&MemberInfo)
+	state, err := Conf.Cluster.checkMaster(&MemberInfo)
 	if err != nil {
 		log.Error("tasksCluster #2: ", err)
 		return err
@@ -90,7 +90,7 @@ func tasksCluster() error {
 		log.Error("tasksCluster #3: ", err)
 		return nil
 	} else if !state.Exists || state.IAmMaster { // Становимся (или обновляем состояние) мастером
-		if err := config.Cluster.setMaster(&MemberInfo); err != nil {
+		if err := Conf.Cluster.setMaster(&MemberInfo); err != nil {
 			log.Error("tasksCluster #4: ", err)
 			return err
 		}
@@ -104,13 +104,13 @@ func tasksCluster() error {
 		log.Debug("tasksCluster #6: i became a SLAVE!")
 	}
 
-	if err := config.Cluster.setWorker(&MemberInfo); err != nil {
+	if err := Conf.Cluster.setWorker(&MemberInfo); err != nil {
 		log.Error("tasksCluster #7: ", err)
 		return err
 	}
 
 	// Обновляем список членов кластера и удаляем старые (при просроченном TTL)
-	if err := config.Cluster.updateMembers(&MemberInfo); err != nil {
+	if err := Conf.Cluster.updateMembers(&MemberInfo); err != nil {
 		log.Error("tasksCluster #8: ", err)
 		return err
 	}

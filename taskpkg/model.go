@@ -8,7 +8,7 @@ import (
 type KeysDCS struct {
 	// Tasks все таски
 	Tasks string `json:"tasks"`
-	// TasksHistory история выполения тасок
+	// TasksHistory история выполнения тасок
 	TasksHistory string `json:"tasks_history"`
 	// TaskProject таски конкретного проекта
 	TaskProject string `json:"task_project"`
@@ -16,20 +16,44 @@ type KeysDCS struct {
 	TaskLatestId string `json:"task_latest_id"`
 }
 
+// TaskStatus представляет статус выполнения задачи
+type TaskStatus int
+
+const (
+	Pending   TaskStatus = iota // Задача ожидает выполнения
+	Running                     // Задача выполняется
+	Completed                   // Задача завершена успешно
+	Failed                      // Задача завершена с ошибкой
+)
+
+// TaskResult содержит результат выполнения задачи
+type TaskResult struct {
+	// Status статус выполнения задачи
+	Status TaskStatus `json:"status"`
+	// Message сообщение о результате выполнения задачи
+	Message string `json:"message"`
+	// RetryCount количество попыток повторного запуска
+	RetryCount int `json:"retry_count"`
+	// CreateAt время создания таски
+	RunningAt *time.Time `json:"running_at"`
+}
+
 // Task представляет информацию о текущей таске
 type Task struct {
-	// ID уникальный идентификатор задачи
+	// ID уникальный идентификатор таски
 	ID int `json:"id"`
-	// ProjectID идентификатор проекта, к которому относится задача
+	// ProjectID идентификатор проекта, к которому относится таска
 	ProjectID int `json:"project_id"`
-	// JobID идентификатор задания, выполняемого задачей
+	// JobID идентификатор задания, к которое запускает таска
 	JobID int `json:"job_id"`
-	// Name название задачи
+	// Name название таски
 	Name string `json:"name,omitempty"`
-	// Status статус задачи (например, "running", "finished", "failed" и т.д.)
-	Status string `json:"status"`
-	// AddAt время создания задачи
+	// Status статус выполнения (например, "running", "finished", "failed" и т.д.)
+	Status TaskResult `json:"status"`
+	// CreateAt время создания таски
 	CreateAt *time.Time `json:"create_at"`
+	// NumberOfRetriesOnError количество попыток для повторного запуска при ошибке
+	NumberOfRetriesOnError int `json:"number_of_retries_on_error"`
 }
 
 // Tasks список тасок

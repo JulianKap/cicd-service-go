@@ -10,7 +10,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -18,11 +17,10 @@ var (
 )
 
 func InitHandler() {
-	namespace := viper.GetString("cluster.namespace_dcs")
 	Keys = KeysDCS{
-		Projects: namespace + constants.PROJECTS_ALL,
-		LatestID: namespace + constants.PROJECT_LATEST_ID,
-		Project:  namespace + constants.PROJECTS + "/",
+		Projects: manager.Conf.Cluster.Namespace + constants.PROJECTS_ALL,
+		LatestID: manager.Conf.Cluster.Namespace + constants.PROJECT_LATEST_ID,
+		Project:  manager.Conf.Cluster.Namespace + constants.PROJECTS + "/",
 	}
 }
 

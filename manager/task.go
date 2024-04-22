@@ -93,7 +93,7 @@ func (c *ClusterConfig) setWorker(m *Member) error {
 // updateMembers добавление инстанса в список кластера.
 // Также удаление старых инстансов, у которых просрочен ttl
 func (c *ClusterConfig) updateMembers(m *Member) error {
-	res, err := getMembersETCD(db.InstanceETCD, Keys.Members)
+	res, err := GetMembers()
 	if err != nil {
 		log.Error("updateMembers #0: ", err)
 		return err
@@ -103,27 +103,29 @@ func (c *ClusterConfig) updateMembers(m *Member) error {
 	newMembers.Members = append(newMembers.Members, *m)
 
 	if res != nil {
-		if m.Master {
-			for _, mbr := range res.Members {
-				if mbr.UUID != m.UUID {
-					keyWorker := Keys.Workers + "/" + mbr.UUID
+		if len(res.Members) > 0 {
+			if m.Master {
+				for _, mbr := range res.Members {
+					if mbr.UUID != m.UUID {
+						keyWorker := Keys.Workers + "/" + mbr.UUID
 
-					validate, err := etcd.IsTTLValid(db.InstanceETCD, keyWorker)
-					if err != nil {
-						log.Error("updateMembers #1: ", err)
-						continue
-					}
+						validate, err := etcd.IsTTLValid(db.InstanceETCD, keyWorker)
+						if err != nil {
+							log.Error("updateMembers #1: ", err)
+							continue
+						}
 
-					if validate {
-						newMembers.Members = append(newMembers.Members, mbr)
-						// todo: как вариант, нужно будет удалять вручную ключи воркеров
+						if validate {
+							newMembers.Members = append(newMembers.Members, mbr)
+							// todo: как вариант, нужно будет удалять вручную ключи воркеров
+						}
 					}
 				}
-			}
-		} else {
-			for _, mbr := range res.Members {
-				if mbr.UUID != m.UUID {
-					newMembers.Members = append(newMembers.Members, mbr)
+			} else {
+				for _, mbr := range res.Members {
+					if mbr.UUID != m.UUID {
+						newMembers.Members = append(newMembers.Members, mbr)
+					}
 				}
 			}
 		}
@@ -135,4 +137,15 @@ func (c *ClusterConfig) updateMembers(m *Member) error {
 	}
 
 	return nil
+}
+
+// GetMembers получение списка членов кластера
+func GetMembers() (*Members, error) {
+	res, err := getMembersETCD(db.InstanceETCD, Keys.Members)
+	if err != nil {
+		log.Error("GetMembers #0: ", err)
+		return nil, err
+	}
+
+	return res, nil
 }

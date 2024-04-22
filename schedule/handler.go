@@ -3,12 +3,12 @@ package schedule
 import (
 	"cicd-service-go/constants"
 	"cicd-service-go/init/db"
+	"cicd-service-go/manager"
 	"cicd-service-go/sources"
 	"cicd-service-go/taskpkg"
 	"cicd-service-go/utility"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"net/http"
 	"strconv"
 )
@@ -18,12 +18,11 @@ var (
 )
 
 func InitHandler() {
-	namespace := viper.GetString("cluster.namespace_dcs")
 	Keys = taskpkg.KeysDCS{
-		Tasks:        namespace + constants.PROJECTS_TASKS,
-		TasksHistory: namespace + constants.PROJECTS_TASKS_HISTORY,
-		TaskProject:  namespace + constants.PROJECTS,
-		TaskLatestId: namespace + constants.PROJECTS_TASKS_LATEST_ID,
+		Tasks:        manager.Conf.Cluster.Namespace + constants.PROJECTS_TASKS,
+		TasksHistory: manager.Conf.Cluster.Namespace + constants.PROJECTS_TASKS_HISTORY,
+		TaskProject:  manager.Conf.Cluster.Namespace + constants.PROJECTS,
+		TaskLatestId: manager.Conf.Cluster.Namespace + constants.PROJECTS_TASKS_LATEST_ID,
 	}
 }
 
@@ -57,7 +56,7 @@ func HandleTaskCreate(ctx echo.Context) (err error) {
 		return ctx.JSON(codeValJob, respValJob)
 	}
 
-	if err := createTaskETCD(db.InstanceETCD, &project, &task); err != nil {
+	if err := createTaskByProjectETCD(db.InstanceETCD, &project, &task); err != nil {
 		log.Error("HandleTaskCreate #1: ", err)
 		return ctx.JSON(http.StatusBadRequest, taskpkg.TasksResponse{
 			Message: "Error create task",
@@ -85,7 +84,7 @@ func HandleTasksGetList(ctx echo.Context) (err error) {
 	}
 
 	var tasks taskpkg.Tasks
-	if err := getTasksETCD(db.InstanceETCD, &project, &tasks); err != nil {
+	if err := getTasksByProjectETCD(db.InstanceETCD, &project, &tasks); err != nil {
 		log.Error("HandleTasksGetList #0: ", err)
 		return ctx.JSON(http.StatusInternalServerError, taskpkg.TasksResponse{
 			Message: "Error get tasks list",
@@ -125,7 +124,7 @@ func HandleTaskGetByID(ctx echo.Context) (err error) {
 		ProjectID: project.ID,
 	}
 
-	state, err := getTaskETCD(db.InstanceETCD, &task)
+	state, err := getTaskByProjectETCD(db.InstanceETCD, &task)
 	if err != nil {
 		log.Error("HandleTaskGetByID #1: ", err)
 		return ctx.JSON(http.StatusInternalServerError, taskpkg.TaskResponse{
@@ -173,7 +172,7 @@ func HandleTaskDeleteByID(ctx echo.Context) (err error) {
 		ProjectID: project.ID,
 	}
 
-	state, err := deleteTaskETCD(db.InstanceETCD, &project, &task)
+	state, err := deleteTaskByProjectETCD(db.InstanceETCD, &project, &task)
 	if err != nil {
 		log.Error("HandleTaskDeleteByID #1: ", err)
 		return ctx.JSON(http.StatusBadRequest, taskpkg.TaskResponse{
