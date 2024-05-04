@@ -1,6 +1,8 @@
 package taskpkg
 
 import (
+	"cicd-service-go/worker"
+	"context"
 	"time"
 )
 
@@ -71,4 +73,25 @@ type TasksResponse struct {
 	Tasks   *Tasks  `json:"tasks"`
 	Message string  `json:"message,omitempty"`
 	Error   *string `json:"error,omitempty"`
+}
+
+type ITask interface {
+	GetActive() error
+	IsZeroID() bool
+	SetStatus(string)
+	Save() error
+	Finish() error
+	GetJSON() ([]byte, error)
+}
+
+type TaskWorker struct {
+	TaskType    string
+	TaskName    string
+	Running     bool
+	controlChan chan int `json:"-"`
+
+	hub         worker.IWorkerHub
+	CurrentTask *Task
+
+	cancel context.CancelFunc
 }

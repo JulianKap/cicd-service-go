@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 var (
@@ -41,6 +42,10 @@ func HandleTaskCreate(ctx echo.Context) (err error) {
 			Error:   utility.StringPtr(err.Error()),
 		})
 	}
+
+	//todo: оформить заполнение данных и валидацию в отдельной функции
+	tm := time.Now()
+	task.CreateAt = &tm
 
 	// Проверка существования проекта
 	project := sources.Project{ID: task.ProjectID}

@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	Conf        Config  // конфигурация
-	MemberInfo  Member  // состояние текущего экзмпляра
+	Conf        Config  // конфигурация кластера
+	MemberInfo  Member  // текущий экзмпляр сервисы
 	Keys        KeysDCS // ключи в DCS для управления кластером
 	managerChan chan bool
 )

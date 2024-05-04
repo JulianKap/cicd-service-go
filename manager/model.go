@@ -14,7 +14,7 @@ type KeysDCS struct {
 	Worker string `json:"worker"`
 }
 
-// ClusterConfig конфиг кластера
+// ClusterConfig конфиг кластераx
 type ClusterConfig struct {
 	Namespace    string `json:"namespace"`
 	TTL          int    `json:"ttl"`

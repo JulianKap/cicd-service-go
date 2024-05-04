@@ -2,6 +2,7 @@ package schedule
 
 import (
 	"cicd-service-go/manager"
+	"cicd-service-go/worker/hub"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"time"
@@ -16,7 +17,12 @@ func init() {
 }
 
 func RunCron() {
-	scheduleTicker := time.NewTicker(time.Duration(viper.GetInt("schedule.cron_timer_s")) * time.Second)
+	cronTimeSeconds := viper.GetInt("schedule.cron_timer_s")
+	if cronTimeSeconds < 1 {
+		cronTimeSeconds = 60 // default
+	}
+
+	scheduleTicker := time.NewTicker(time.Duration(cronTimeSeconds) * time.Second)
 
 	for {
 		select {
@@ -31,7 +37,16 @@ func RunCron() {
 	}
 }
 
+// сделать исключение для полей в структурах, чтобы можно было доавбить больше полей
+// все таки сделать упрощение для воркера и просто использовать chan
+//
+
 func runSchedule() error {
+	workerHub := hub.GetHub()
+
+	workerHub.ChanLock()
+	defer workerHub.ChanUnlock()
+
 	if manager.MemberInfo.Master {
 		log.Debug("runSchedule #0: run scheduler as MASTER")
 
@@ -50,7 +65,12 @@ func runSchedule() error {
 
 	log.Debug("runSchedule #3: run scheduler for Worker")
 
-	if err := tasksWorker(); err != nil {
+	//workerHub := hub.GetHub()
+	//
+	//workerHub.ChanLock()
+	//defer workerHub.ChanUnlock()
+
+	if err := runTasksWorker(); err != nil {
 		log.Error("runSchedule #1: ", err)
 		return err
 	}
