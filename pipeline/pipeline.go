@@ -11,6 +11,8 @@ func GetPipeline(j sources.Job) (p Pipeline, err error) {
 		return p, err
 	}
 
+	//todo: сделать поддержку gilab и bitbacket
+
 	// Получаем содержимое файла cicd.yml из репозитория git
 	content, err := getPipelineFromGit(j.URL, j.Branch)
 	if err != nil {

@@ -2,8 +2,10 @@ package worker
 
 import (
 	"cicd-service-go/pipeline"
+	"cicd-service-go/scripts"
 	"cicd-service-go/taskpkg"
 	log "github.com/sirupsen/logrus"
+	"sync"
 )
 
 // RunTask запуск выполнения таски
@@ -15,6 +17,20 @@ func RunTask(p pipeline.Pipeline, t taskpkg.Task) (err error) {
 
 	for _, s := range p.Steps {
 		log.Info("RunTask #1: run step=", s.Name, " project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID)
+
+		if s.Image == "" {
+			log.Warn("RunTask #2: not image in step=", s.Name, " project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID)
+			continue
+		}
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go scripts.PullImage(&wg, s.Image)
+		wg.Wait()
+
+		wg.Add(1)
+		go scripts.RunCommandImage(&wg, s)
+		wg.Wait()
 	}
 
 	// todo: Использовать патерн пайплайн

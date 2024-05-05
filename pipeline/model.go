@@ -9,5 +9,10 @@ type Step struct {
 
 // Pipeline представляет собой структуру пайплайна CI/CD
 type Pipeline struct {
-	Steps []Step `yaml:"pipeline.steps"`
+	Steps []Step `yaml:"steps"`
+}
+
+// PipelineRawString структура пайплайна в string
+type PipelineRawString struct {
+	Content string `json:"content"`
 }

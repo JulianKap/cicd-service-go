@@ -2,6 +2,8 @@ package pipeline
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -19,11 +21,15 @@ func getPipelineFromGit(url string, branch string) ([]byte, error) {
 		branch = "master"
 	}
 
+	if strings.HasPrefix(url, "https://github.com/") {
+		url = strings.TrimPrefix(url, "https://github.com/")
+	}
 	if strings.HasSuffix(url, ".git") {
 		url = strings.TrimSuffix(url, ".git")
 	}
+
 	// Формируем URL для получения cicd.yml файла
-	apiURL := fmt.Sprintf("%s/blob/%s/cicd.yml", url, branch)
+	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/contents/cicd.yml?ref=%s", url, branch)
 
 	client := http.DefaultClient
 	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
@@ -44,11 +50,25 @@ func getPipelineFromGit(url string, branch string) ([]byte, error) {
 		return nil, err
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Error("getPipelineFromGit #3: ", err)
 		return nil, err
 	}
 
-	return data, nil
+	var pRaw PipelineRawString
+	err = json.Unmarshal(body, &pRaw)
+	if err != nil {
+		log.Error("getPipelineFromGit #4: ", err)
+		return nil, err
+	}
+
+	// Декодирование содержимого файла из base64
+	content, err := base64.StdEncoding.DecodeString(pRaw.Content)
+	if err != nil {
+		log.Error("getPipelineFromGit #5: ", err)
+		return nil, err
+	}
+
+	return content, nil
 }
