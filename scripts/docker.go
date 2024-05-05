@@ -2,7 +2,6 @@ package scripts
 
 import (
 	"bufio"
-	"cicd-service-go/pipeline"
 	"context"
 	"fmt"
 	log "github.com/sirupsen/logrus"
@@ -73,16 +72,16 @@ func newRewriter(ctx context.Context, prefix string) io.Writer {
 }
 
 // PullImage получение docker образа
-func PullImage(wg *sync.WaitGroup, name string) error {
+func PullImage(wg *sync.WaitGroup, image string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer func() {
 		cancel()
 		//wg.Done()
 	}()
 
-	output := newRewriter(ctx, name)
+	output := newRewriter(ctx, image)
 
-	cmd := exec.Command("docker", "pull", name)
+	cmd := exec.Command("docker", "pull", image)
 	cmd.Stdout = output
 	cmd.Stderr = output
 
@@ -96,25 +95,25 @@ func PullImage(wg *sync.WaitGroup, name string) error {
 	return nil
 }
 
-func RunCommandImage(wg *sync.WaitGroup, s pipeline.Step) error {
+func RunCommandImage(wg *sync.WaitGroup, image string, commands string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer func() {
 		cancel()
 		//wg.Done()
 	}()
 
-	output := newRewriter(ctx, s.Image)
+	output := newRewriter(ctx, image)
 
 	// Создание команды для запуска Docker образа с командами шага
 	cmd := exec.CommandContext(
 		ctx,
-		"docker", "run", "--rm", "-i", s.Image, "/bin/bash", "-c", fmt.Sprintf("%s", s.Commands[0]))
+		"docker", "run", "--rm", "-i", image, "/bin/sh", "-c", commands)
 	cmd.Stdout = output
 	cmd.Stderr = output
 
 	err := cmd.Run()
 	if err != nil {
-		log.Error("PullImage #0: ", err)
+		log.Error("RunCommandImage #0: ", err)
 		//panic(err)
 		return err
 	}

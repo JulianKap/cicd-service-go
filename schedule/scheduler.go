@@ -81,25 +81,29 @@ func tasksScheduler() (standalone bool, err error) {
 				log.Error("tasksScheduler #6: ", err)
 			}
 
+			// Проверяем, что воркер актуальный. Иначе все незавершенные задания перераспределяем между другими воркерами
+			okWorker := false
+			for _, m := range members.Members {
+				if m.UUID == t.Status.WorkerUUID {
+					okWorker = true
+					break
+				}
+			}
+
 			if t.Status.Status == taskpkg.Completed {
 				taskInHistory = true
 			} else if t.Status.Status == taskpkg.Failed {
 				if t.NumberOfRetriesOnError > t.Status.RetryCount {
 					taskInHistory = false
-					continue
+
+					if okWorker {
+						continue
+					}
 				} else {
 					taskInHistory = true
 				}
 			} else if t.Status.Status == taskpkg.Pending || t.Status.Status == taskpkg.Running {
-				ok := false
-				for _, m := range members.Members {
-					if m.UUID == t.Status.WorkerUUID {
-						ok = true // Воркер актуальный, поэтому не будем трогать задание
-						break
-					}
-				}
-
-				if ok {
+				if okWorker {
 					continue
 				}
 			}

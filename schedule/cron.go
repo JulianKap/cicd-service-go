@@ -107,7 +107,7 @@ func runSchedule() error {
 		t.CreateAt = &tm
 
 		// Запуск выполнения пайплайна
-		if err := worker.RunWorkerTask(p, t); err != nil {
+		if err := worker.RunWorkerTask(j, p, t); err != nil {
 			log.Error("runSchedule #8: ", err)
 			t.Status.Status = taskpkg.Failed
 			t.Status.Message = err.Error()
