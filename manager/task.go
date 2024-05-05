@@ -131,7 +131,7 @@ func (c *ClusterConfig) updateMembers(m *Member) error {
 		}
 	}
 
-	if err := newMembers.setMembersETCD(db.InstanceETCD, Keys.Members); err != nil {
+	if err := newMembers.setMembersETCD(db.InstanceETCD); err != nil {
 		log.Error("updateMembers #3: ", err)
 		return err
 	}

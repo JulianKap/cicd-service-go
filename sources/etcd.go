@@ -192,8 +192,8 @@ func (p *Project) getJobsETCD(cli *clientv3.Client, jobs *Jobs) error {
 	return nil
 }
 
-// getJobETCD получить задачу
-func (p *Project) getJobETCD(cli *clientv3.Client, job *Job) (bool, error) {
+// GetJobETCD получить задачу
+func (p *Project) GetJobETCD(cli *clientv3.Client, job *Job) (bool, error) {
 	key := Keys.Project + strconv.Itoa(p.ID) + constants.JOBS + strconv.Itoa(job.ID)
 	resp, err := etcd.GetKey(cli, key)
 	if err != nil {

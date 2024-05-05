@@ -297,7 +297,7 @@ func HandleJobGetByID(ctx echo.Context) (err error) {
 		ID: jobID,
 	}
 
-	state, err := project.getJobETCD(db.InstanceETCD, &job)
+	state, err := project.GetJobETCD(db.InstanceETCD, &job)
 	if err != nil {
 		log.Error("HandleJobGetByID #1: ", err)
 		return ctx.JSON(http.StatusInternalServerError, ProjectResponse{
@@ -415,7 +415,7 @@ func ValidateProjectById(ctx echo.Context, p *Project, id string) (int, ProjectR
 
 // ValidateJob проверка существования задачи и получение ее
 func ValidateJob(p *Project, j *Job) (int, JobResponse) {
-	state, err := p.getJobETCD(db.InstanceETCD, j)
+	state, err := p.GetJobETCD(db.InstanceETCD, j)
 	if err != nil {
 		log.Error("ValidateJob #0: ", err)
 		return http.StatusInternalServerError, JobResponse{

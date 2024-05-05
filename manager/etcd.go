@@ -57,7 +57,7 @@ func (w *Worker) setWorkerETCD(cli *clientv3.Client) error {
 }
 
 // setMembersETCD добавляет в список членов кластера
-func (m *Members) setMembersETCD(cli *clientv3.Client, key string) error {
+func (m *Members) setMembersETCD(cli *clientv3.Client) error {
 	valueJSON, err := json.Marshal(m)
 	if err != nil {
 		log.Error("setMembersETCD #0: ", err)

@@ -2,7 +2,8 @@ package schedule
 
 import (
 	"cicd-service-go/manager"
-	"cicd-service-go/worker/hub"
+	"cicd-service-go/pipeline"
+	"cicd-service-go/worker"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"time"
@@ -10,10 +11,20 @@ import (
 
 var (
 	CloseCronChan chan bool
+	controlChan   chan int
 )
 
 func init() {
 	CloseCronChan = make(chan bool)
+	controlChan = make(chan int, 1)
+}
+
+func сhanLock() {
+	controlChan <- 1
+}
+
+func сhanUnlock() {
+	<-controlChan
 }
 
 func RunCron() {
@@ -37,15 +48,9 @@ func RunCron() {
 	}
 }
 
-// сделать исключение для полей в структурах, чтобы можно было доавбить больше полей
-// все таки сделать упрощение для воркера и просто использовать chan
-//
-
 func runSchedule() error {
-	workerHub := hub.GetHub()
-
-	workerHub.ChanLock()
-	defer workerHub.ChanUnlock()
+	сhanLock()
+	defer сhanUnlock()
 
 	if manager.MemberInfo.Master {
 		log.Debug("runSchedule #0: run scheduler as MASTER")
@@ -65,20 +70,36 @@ func runSchedule() error {
 
 	log.Debug("runSchedule #3: run scheduler for Worker")
 
-	//workerHub := hub.GetHub()
-	//
-	//workerHub.ChanLock()
-	//defer workerHub.ChanUnlock()
-
-	if err := runTasksWorker(); err != nil {
-		log.Error("runSchedule #1: ", err)
+	err, tasks := runTasksWorker()
+	if err != nil {
+		log.Error("runSchedule #3: ", err)
 		return err
 	}
 
-	// Получаем свои задачи
-	// Запускаем
-	// Использовать алгоритм пайплайн
-	//
+	if len(tasks.Tasks) == 0 {
+		log.Debug("runSchedule #4: not found actual tasks for ", manager.MemberInfo.UUID)
+		return nil
+	}
+
+	// Запуск выполнения задач
+	for _, t := range tasks.Tasks {
+		j, err := getJobEtcd(t)
+		if err != nil {
+			log.Error("runSchedule #5: ", err)
+			continue
+		}
+
+		p, err := pipeline.GetPipeline(j)
+		if err != nil {
+			log.Error("runSchedule #6: ", err)
+			continue
+		}
+
+		if err := worker.RunTask(p, t); err != nil {
+			log.Error("runSchedule #8: ", err)
+			//continue
+		}
+	}
 
 	return nil
 }

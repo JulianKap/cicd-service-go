@@ -2,6 +2,7 @@ package schedule
 
 import (
 	"cicd-service-go/db/etcd"
+	"cicd-service-go/init/db"
 	"cicd-service-go/manager"
 	"cicd-service-go/sources"
 	"cicd-service-go/taskpkg"
@@ -227,4 +228,17 @@ func setTaskToWorker(cli *clientv3.Client, w manager.Member, t *taskpkg.Task) (s
 	}
 
 	return true, nil
+}
+
+// getJobEtcd получить job
+func getJobEtcd(t taskpkg.Task) (job sources.Job, err error) {
+	p := sources.Project{ID: t.ProjectID}
+	j := sources.Job{ID: t.JobID}
+
+	if _, err := p.GetJobETCD(db.InstanceETCD, &j); err != nil {
+		log.Error("getJobEtcd #0: ", err)
+		return j, err
+	}
+
+	return j, nil
 }

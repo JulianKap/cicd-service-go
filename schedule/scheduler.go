@@ -7,7 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// tasksScheduler обработка тасок мастером
+// tasksScheduler планирование всех заданий мастером
 func tasksScheduler() (standalone bool, err error) {
 	standalone = false
 
@@ -121,13 +121,13 @@ func tasksScheduler() (standalone bool, err error) {
 	return true, err
 }
 
-// setTaskWorker назначение задачи воркеру
+// setTaskWorker назначение задания воркеру
 func setTaskWorker(w manager.Member, t taskpkg.Task) (ok bool, err error) {
 	log.Debug("setTaskWorker #0: member: ", w.UUID, " task: ", t.ID)
 	return setTaskToWorker(db.InstanceETCD, w, &t)
 }
 
-// moveTaskInHistory перевод таски в список истории
+// moveTaskInHistory перенос задания в список истории
 func moveTaskInHistory(task taskpkg.Task) error {
 	log.Debug("setTaskWorker #0: task: ", task.ID)
 
@@ -135,21 +135,22 @@ func moveTaskInHistory(task taskpkg.Task) error {
 	return nil
 }
 
-// runTasksWorker обработка задач воркером
-func runTasksWorker() (err error) {
+// runTasksWorker планирование заданий воркером
+func runTasksWorker() (err error, t taskpkg.Tasks) {
+	var tasksInQueue taskpkg.Tasks
+
 	// Получаем список своих задач
 	var tasks taskpkg.Tasks
 	if err := getTasksForWorker(db.InstanceETCD, manager.MemberInfo, &tasks); err != nil {
 		log.Error("runTasksWorker #0: ", err)
-		return err
+		return err, tasksInQueue
 	}
 
 	if len(tasks.Tasks) == 0 {
 		log.Debug("runTasksWorker #1: not found tasks")
-		return nil
+		return nil, tasksInQueue
 	}
 
-	tasksInQueue := taskpkg.Tasks{}
 	for _, t := range tasks.Tasks {
 		if t.Status.Status == taskpkg.Failed {
 			// Лимит попыток исчерпан. Переводим задачу в список истории
@@ -169,5 +170,5 @@ func runTasksWorker() (err error) {
 		}
 	}
 
-	return err
+	return err, tasksInQueue
 }
