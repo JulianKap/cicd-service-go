@@ -127,8 +127,8 @@ func (p *Project) deleteProjectETCD(cli *clientv3.Client) (bool, string, error) 
 	}
 
 	if len(jobs.Jobs) > 0 {
-		log.Info("deleteProjectETCD #2: this project has ", len(jobs.Jobs), " tasks. need to remove them first")
-		return false, "Error delete project. Has " + strconv.Itoa(len(jobs.Jobs)) + " tasks. Need to remove them first", nil
+		log.Info("deleteProjectETCD #2: this project has ", len(jobs.Jobs), " jobs. Need to remove them first")
+		return false, "Error delete project. Has " + strconv.Itoa(len(jobs.Jobs)) + " jobs. Need to remove them first", nil
 	}
 
 	state := false

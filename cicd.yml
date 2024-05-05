@@ -28,8 +28,3 @@ pipeline:
       image:
       commands:
         - ./deploy.sh
-
-#    - name: Cleanup
-#      image: alpine:latest
-#      commands:
-#        - rm cicd-service-go

@@ -5,10 +5,10 @@ go 1.22.1
 require (
 	github.com/google/uuid v1.4.0
 	github.com/labstack/echo/v4 v4.11.4
-	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.18.2
 	go.etcd.io/etcd/client/v3 v3.5.10
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -49,5 +49,4 @@ require (
 	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

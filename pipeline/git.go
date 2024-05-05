@@ -15,11 +15,15 @@ func getPipelineFromGit(url string, branch string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	if branch == "" {
+		branch = "master"
+	}
+
 	if strings.HasSuffix(url, ".git") {
 		url = strings.TrimSuffix(url, ".git")
 	}
 	// Формируем URL для получения cicd.yml файла
-	apiURL := fmt.Sprintf("%s/%s/cicd.yml", url, branch)
+	apiURL := fmt.Sprintf("%s/blob/%s/cicd.yml", url, branch)
 
 	client := http.DefaultClient
 	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)

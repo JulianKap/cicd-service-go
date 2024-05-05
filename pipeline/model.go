@@ -9,5 +9,5 @@ type Step struct {
 
 // Pipeline представляет собой структуру пайплайна CI/CD
 type Pipeline struct {
-	Steps []Step `yaml:"pipeline"`
+	Steps []Step `yaml:"pipeline.steps"`
 }
