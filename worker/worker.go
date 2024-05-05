@@ -8,29 +8,41 @@ import (
 	"sync"
 )
 
-// RunTask запуск выполнения таски
-func RunTask(p pipeline.Pipeline, t taskpkg.Task) (err error) {
+// RunWorkerTask запуск выполнения таски
+func RunWorkerTask(p pipeline.Pipeline, t taskpkg.Task) (err error) {
 	if len(p.Steps) == 0 {
-		log.Info("RunTask #0: null count steps in pipeline project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID)
+		log.Info("RunWorkerTask #0: null count steps in pipeline (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
 		return nil
 	}
+	var wg sync.WaitGroup
 
 	for _, s := range p.Steps {
-		log.Info("RunTask #1: run step=", s.Name, " project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID)
+		log.Info("RunWorkerTask #1: run step=", s.Name, " (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
 
 		if s.Image == "" {
-			log.Warn("RunTask #2: not image in step=", s.Name, " project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID)
-			continue
+			log.Warn("RunWorkerTask #2: not image in step=", s.Name, " (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
+			//continue
+			//var err error
+			//return error("")
 		}
 
-		var wg sync.WaitGroup
-		wg.Add(1)
-		go scripts.PullImage(&wg, s.Image)
-		wg.Wait()
+		// todo: проверить наличие образа, чтобы не пулить
+		//wg.Add(1)
+		if err := scripts.PullImage(&wg, s.Image); err != nil {
+			log.Error("RunWorkerTask #3: ", err)
+			return err
+		}
+		//go scripts.PullImage(&wg, s.Image)
+		//wg.Wait()
 
-		wg.Add(1)
-		go scripts.RunCommandImage(&wg, s)
-		wg.Wait()
+		//wg.Add(1)
+		if err := scripts.RunCommandImage(&wg, s); err != nil {
+			log.Error("RunWorkerTask #4: ", err)
+			//continue
+			return err
+		}
+		//go scripts.RunCommandImage(&wg, s)
+		//wg.Wait()
 	}
 
 	// todo: Использовать патерн пайплайн

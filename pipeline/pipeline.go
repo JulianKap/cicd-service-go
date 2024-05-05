@@ -7,11 +7,11 @@ import (
 
 func GetPipeline(j sources.Job) (p Pipeline, err error) {
 	if j.URL == "" {
-		log.Error("GetPipeline #0: url is empty for project_id=", j.IdProject, " job_id=", j.ID)
+		log.Error("GetPipeline #0: url is empty (project_id=", j.IdProject, " job_id=", j.ID, ")")
 		return p, err
 	}
 
-	//todo: сделать поддержку gilab и bitbacket
+	//todo: сделать поддержку gitlab и bitbacket
 
 	// Получаем содержимое файла cicd.yml из репозитория git
 	content, err := getPipelineFromGit(j.URL, j.Branch)

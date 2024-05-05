@@ -16,17 +16,18 @@ type KeysDCS struct {
 	TaskLatestId string `json:"task_latest_id"`
 }
 
-// TaskStatus представляет статус выполнения задачи
+// TaskStatus представляет статус выполнения задания
 type TaskStatus int
 
 const (
-	Pending   TaskStatus = iota // Задача ожидает выполнения
-	Running                     // Задача выполняется
-	Completed                   // Задача завершена успешно
-	Failed                      // Задача завершена с ошибкой
+	Pending   TaskStatus = iota // Задание ожидает выполнения
+	Running                     // Задание выполняется
+	Completed                   // Задание завершена успешно
+	Failed                      // Задание завершена с ошибкой
+	Schedule                    // Задание распределено, но еще не запускалось
 )
 
-// TaskResult содержит результат выполнения задачи
+// TaskResult содержит результат выполнения задания
 type TaskResult struct {
 	// Status статус выполнения задачи
 	Status TaskStatus `json:"status"`
@@ -36,6 +37,8 @@ type TaskResult struct {
 	RetryCount int `json:"retry_count"`
 	// CreateAt время создания таски
 	RunningAt *time.Time `json:"running_at"`
+	// WorkerUUID uuid воркера, на которого распределено задание
+	WorkerUUID string `json:"worker_uuid"`
 }
 
 // Task представляет информацию о текущей таске

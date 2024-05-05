@@ -1,6 +1,7 @@
 package schedule
 
 import (
+	"cicd-service-go/constants"
 	"cicd-service-go/db/etcd"
 	"cicd-service-go/init/db"
 	"cicd-service-go/manager"
@@ -13,7 +14,27 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-// getTasksETCD получить список всех тасок из etcd по всем проектам
+// setTasksETCD добавить список заданий для всех проектов
+func setTasksETCD(cli *clientv3.Client, tasks *taskpkg.Tasks) error {
+	if len(tasks.Tasks) == 0 {
+		log.Info("setTasksETCD #0: not found tasks")
+	}
+
+	tasksJSON, err := json.Marshal(tasks)
+	if err != nil {
+		log.Error("setTasksETCD #1: ", err)
+		return err
+	}
+
+	if err = etcd.SetKey(cli, Keys.Tasks, string(tasksJSON)); err != nil {
+		log.Error("setTasksETCD #3: ", err)
+		return err
+	}
+
+	return nil
+}
+
+// getTasksETCD получить список всех заданий из etcd по всем проектам
 func getTasksETCD(cli *clientv3.Client, tasks *taskpkg.Tasks) error {
 	resp, err := etcd.GetKey(cli, Keys.Tasks)
 	if err != nil {
@@ -37,7 +58,7 @@ func getTasksETCD(cli *clientv3.Client, tasks *taskpkg.Tasks) error {
 	return nil
 }
 
-// getTasksByProjectETCD получить список всех тасок из etcd по указанному проекту
+// getTasksByProjectETCD получить список всех заданий из etcd по указанному проекту
 func getTasksByProjectETCD(cli *clientv3.Client, p *sources.Project, tasks *taskpkg.Tasks) error {
 	var allTask taskpkg.Tasks
 	if err := getTasksETCD(cli, &allTask); err != nil {
@@ -54,7 +75,7 @@ func getTasksByProjectETCD(cli *clientv3.Client, p *sources.Project, tasks *task
 	return nil
 }
 
-// getTaskByProjectETCD получить указанную таску по проекту
+// getTaskByProjectETCD получить указанное задание по проекту
 func getTaskByProjectETCD(cli *clientv3.Client, t *taskpkg.Task) (bool, error) {
 	key := Keys.TaskProject + "/" + strconv.Itoa(t.ProjectID) + "/tasks/" + strconv.Itoa(t.ID)
 	resp, err := etcd.GetKey(cli, key)
@@ -79,7 +100,7 @@ func getTaskByProjectETCD(cli *clientv3.Client, t *taskpkg.Task) (bool, error) {
 	return true, nil
 }
 
-// createTaskByProjectETCD создание таски
+// createTaskByProjectETCD создание задания
 func createTaskByProjectETCD(cli *clientv3.Client, p *sources.Project, t *taskpkg.Task) error {
 	latestId, err := sources.GetLatestIdETCD(cli, Keys.TaskLatestId)
 	if err != nil {
@@ -98,42 +119,36 @@ func createTaskByProjectETCD(cli *clientv3.Client, p *sources.Project, t *taskpk
 		log.Error("createTaskByProjectETCD #1: ", err)
 		return err
 	}
+	// Добавление задания в общий список заданий
 	tasks.Tasks = append(tasks.Tasks, *t)
-
-	tasksJSON, err := json.Marshal(tasks)
-	if err != nil {
+	if err = setTasksETCD(cli, &tasks); err != nil {
 		log.Error("createTaskByProjectETCD #2: ", err)
 		return err
 	}
 
-	if err = etcd.SetKey(cli, Keys.Tasks, string(tasksJSON)); err != nil {
-		log.Error("createTaskByProjectETCD #3: ", err)
-		return err
-	}
-
-	// Добавление таски к своему проекту
+	// Добавление задания к своему проекту
 	taskJSON, err := json.Marshal(t)
 	if err != nil {
-		log.Error("createTaskByProjectETCD #4: ", err)
+		log.Error("createTaskByProjectETCD #3: ", err)
 		return err
 	}
 
 	key := Keys.TaskProject + "/" + strconv.Itoa(t.ProjectID) + "/tasks/" + strconv.Itoa(t.ID)
 	if err = etcd.SetKey(cli, key, string(taskJSON)); err != nil {
-		log.Error("createTaskByProjectETCD #5: ", err)
+		log.Error("createTaskByProjectETCD #4: ", err)
 		return err
 	}
 
-	// Добавление последнего ID
+	// Добавление последнего ID задания
 	if err = etcd.SetKey(cli, Keys.TaskLatestId, strconv.Itoa(t.ID)); err != nil {
-		log.Error("createTaskByProjectETCD #6: ", err)
+		log.Error("createTaskByProjectETCD #5: ", err)
 		return err
 	}
 
 	return nil
 }
 
-// deleteTaskByProjectETCD удаление таски
+// deleteTaskByProjectETCD удаление задания
 func deleteTaskByProjectETCD(cli *clientv3.Client, p *sources.Project, t *taskpkg.Task) (bool, error) {
 	var tasks taskpkg.Tasks
 	if err := getTasksByProjectETCD(cli, p, &tasks); err != nil {
@@ -173,9 +188,9 @@ func deleteTaskByProjectETCD(cli *clientv3.Client, p *sources.Project, t *taskpk
 	return state, nil
 }
 
-// getTasksForWorker получить список всех тасок воркера
-func getTasksForWorker(cli *clientv3.Client, w manager.Member, t *taskpkg.Tasks) (err error) {
-	key := manager.Keys.Worker + "/" + w.UUID + "/tasks"
+// getTasksForWorker получить список всех заданий для воркера
+func getTasksForWorker(cli *clientv3.Client, m manager.Member, t *taskpkg.Tasks) (err error) {
+	key := manager.Conf.Cluster.Namespace + constants.WORKERS + "/" + m.UUID + "/tasks"
 	resp, err := etcd.GetKey(cli, key)
 	if err != nil {
 		log.Error("getTasksForWorker #0: ", err)
@@ -198,10 +213,28 @@ func getTasksForWorker(cli *clientv3.Client, w manager.Member, t *taskpkg.Tasks)
 	return nil
 }
 
-// setTaskToWorker назначить таску для воркера
-func setTaskToWorker(cli *clientv3.Client, w manager.Member, t *taskpkg.Task) (state bool, err error) {
+// getTaskForWorker получение задания воркера с актуальным статусом его выполнения
+func getTaskForWorker(cli *clientv3.Client, m manager.Member, t *taskpkg.Task) error {
 	var tasks taskpkg.Tasks
-	if err := getTasksForWorker(cli, w, &tasks); err != nil {
+	if err := getTasksForWorker(cli, m, &tasks); err != nil {
+		log.Error("getTaskForWorker #0: ", err)
+		return err
+	}
+
+	for _, task := range tasks.Tasks {
+		if task.ID == t.ID {
+			t.Status = task.Status
+			break
+		}
+	}
+
+	return nil
+}
+
+// setTaskForWorker назначить задание для воркера
+func setTaskForWorker(cli *clientv3.Client, m manager.Member, t *taskpkg.Task) (state bool, err error) {
+	var tasks taskpkg.Tasks
+	if err := getTasksForWorker(cli, m, &tasks); err != nil {
 		log.Error("setTaskToWorker #0: ", err)
 		return false, err
 	}
@@ -221,7 +254,7 @@ func setTaskToWorker(cli *clientv3.Client, w manager.Member, t *taskpkg.Task) (s
 		return false, err
 	}
 
-	key := manager.Keys.Worker + "/" + w.UUID + "/tasks"
+	key := manager.Conf.Cluster.Namespace + constants.WORKERS + "/" + m.UUID + "/tasks"
 	if err = etcd.SetKey(cli, key, string(tasksJSON)); err != nil {
 		log.Error("setTaskToWorker #3: ", err)
 		return false, err
@@ -230,7 +263,67 @@ func setTaskToWorker(cli *clientv3.Client, w manager.Member, t *taskpkg.Task) (s
 	return true, nil
 }
 
-// getJobEtcd получить job
+// updateTaskForWorker обновить статус выполнения задания для воркера
+func updateTaskForWorker(cli *clientv3.Client, m manager.Member, t *taskpkg.Task) error {
+	var tasks taskpkg.Tasks
+	if err := getTasksForWorker(cli, m, &tasks); err != nil {
+		log.Error("updateTaskForWorker #0: ", err)
+		return err
+	}
+
+	var newTasks taskpkg.Tasks
+	for _, task := range tasks.Tasks {
+		if task.ID == t.ID {
+			log.Debug("updateTaskForWorker #1: update status task on ", t.Status.Status, " (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
+			newTasks.Tasks = append(newTasks.Tasks, *t)
+		} else {
+			newTasks.Tasks = append(newTasks.Tasks, task)
+		}
+	}
+
+	tasksJSON, err := json.Marshal(newTasks)
+	if err != nil {
+		log.Error("updateTaskForWorker #2: ", err)
+		return err
+	}
+
+	key := manager.Keys.Worker + "/tasks"
+	if err = etcd.SetKey(cli, key, string(tasksJSON)); err != nil {
+		log.Error("updateTaskForWorker #3: ", err)
+		return err
+	}
+
+	return nil
+}
+
+// updateAllTasks обновление всех заданий
+func updateAllTasks(cli *clientv3.Client, tasks *taskpkg.Tasks) error {
+	// Обновление списка заданий по всем проектам
+	if err := setTasksETCD(cli, tasks); err != nil {
+		log.Error("updateAllTasks #0: ", err)
+		return err
+	}
+
+	// Обновление заданий в рамках проекта
+	for _, t := range tasks.Tasks {
+		// Добавление таски к своему проекту
+		taskJSON, err := json.Marshal(t)
+		if err != nil {
+			log.Error("updateAllTasks #1: ", err)
+			continue
+		}
+
+		key := Keys.TaskProject + "/" + strconv.Itoa(t.ProjectID) + "/tasks/" + strconv.Itoa(t.ID)
+		if err = etcd.SetKey(cli, key, string(taskJSON)); err != nil {
+			log.Error("updateAllTasks #2: ", err)
+			continue
+		}
+	}
+
+	return nil
+}
+
+// getJobEtcd получить задачу, для которой относится задание
 func getJobEtcd(t taskpkg.Task) (job sources.Job, err error) {
 	p := sources.Project{ID: t.ProjectID}
 	j := sources.Job{ID: t.JobID}
