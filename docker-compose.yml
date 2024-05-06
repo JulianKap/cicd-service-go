@@ -4,17 +4,17 @@ volumes:
   etcd-data:
 
 services:
-  cicd-service-01:
-    build: .
-    container_name: cicd-service-01
-    volumes:
-      - ./configs/config-test.json:/app/config.json
-      - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - 3000:3000
-    restart: always
-    depends_on:
-      - etcd
+#  cicd-service-01:
+#    build: .
+#    container_name: cicd-service-01
+#    volumes:
+#      - ./configs/config-test.json:/app/config.json
+#      - /var/run/docker.sock:/var/run/docker.sock
+#    ports:
+#      - 3000:3000
+#    restart: always
+#    depends_on:
+#      - etcd
 
   etcd:
     image: quay.io/coreos/etcd:v3.5.13
