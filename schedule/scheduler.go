@@ -150,26 +150,25 @@ func tasksScheduler() (standalone bool, err error) {
 			}
 		}
 	} else { // Когда есть другие воркеры
-		i := 0
 		// Распределяем задачи по воркерам
 		for j, t := range tasksInQueue.Tasks {
-			// Отмечаем uuid воркера, на который распределено задание
-			t.Status.WorkerUUID = workers.Members[i].UUID
-			tasksInQueue.Tasks[j].Status.WorkerUUID = workers.Members[i].UUID
-			tasksInQueue.Tasks[j].Status.Status = taskpkg.Schedule
-
-			ok, err := setTaskForWorker(db.InstanceETCD, workers.Members[i], &t)
+			m, err := GetMemberWithMinTasks(workers)
 			if err != nil {
 				log.Error("tasksScheduler #11: ", err)
 			}
 
-			if !ok {
-				// todo: распределить данную таску на другого воркера
+			// Отмечаем uuid воркера, на который распределено задание
+			t.Status.WorkerUUID = m.UUID
+			tasksInQueue.Tasks[j].Status.WorkerUUID = m.UUID
+			tasksInQueue.Tasks[j].Status.Status = taskpkg.Schedule
+
+			ok, err := setTaskForWorker(db.InstanceETCD, *m, &t)
+			if err != nil {
+				log.Error("tasksScheduler #12: ", err)
 			}
 
-			i++
-			if i == len(workers.Members) {
-				i = 0
+			if !ok {
+				// todo: распределить данную таску на другого воркера
 			}
 		}
 	}
@@ -229,4 +228,24 @@ func tasksSchedulerWorker() (err error, t taskpkg.Tasks) {
 	}
 
 	return err, tasksInQueue
+}
+
+// GetMemberWithMinTasks получение члена кластера с минимальным количеством заданий
+func GetMemberWithMinTasks(members manager.Members) (*manager.Member, error) {
+	memberCountTask := 0
+	var member manager.Member
+	for _, m := range members.Members {
+		var t taskpkg.Tasks
+		if err := getTasksForWorker(db.InstanceETCD, m, &t); err != nil {
+			log.Error("GetMemberWithMinTasks #0: ", err)
+			continue
+		}
+
+		if len(t.Tasks) == 0 || len(t.Tasks) < memberCountTask {
+			memberCountTask = len(t.Tasks)
+			member = m
+		}
+	}
+
+	return &member, nil
 }

@@ -22,7 +22,8 @@ services:
     restart: always
 
   cicd-service-01:
-    build: .
+    build:
+      dockerfile: ./Dockerfile.dind
     container_name: cicd-service-01
     volumes:
       - ./configs/config-test.json:/app/config.json
@@ -34,7 +35,8 @@ services:
       - etcd
 
   cicd-service-02:
-    build: .
+    build:
+      dockerfile: ./Dockerfile.dind
     container_name: cicd-service-02
     volumes:
       - ./configs/config-test.json:/app/config.json
@@ -46,7 +48,8 @@ services:
       - etcd
 
   cicd-service-03:
-    build: .
+    build:
+      dockerfile: ./Dockerfile.dind
     container_name: cicd-service-03
     volumes:
       - ./configs/config-test.json:/app/config.json
@@ -56,4 +59,3 @@ services:
     restart: always
     depends_on:
       - etcd
-
