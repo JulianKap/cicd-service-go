@@ -1,1 +1,4 @@
-# cicd-service-go
+cicd-service-go
+===
+
+Сервис для построения CI/CD конвейера

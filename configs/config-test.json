@@ -1,0 +1,35 @@
+{
+    "listen": {
+        "server": {
+            "host": "0.0.0.0",
+            "port": "3000"
+        },
+        "pprof": {
+            "host": "0.0.0.0",
+            "port": "3001"
+        }
+    },
+    "database": {
+        "etcd": {
+            "endpoints" : [
+                "http://etcd:2379"
+            ],
+            "dialTimeout": "5"
+        }
+    },
+    "logging": {
+        "level": "debug"
+    },
+    "schedule": {
+        "cron_timer_s": 10,
+        "tasks_parallel_workers": 5,
+        "tasks_history_count": 100,
+        "ttl_wait_tasks_s": 3600
+    },
+    "cluster": {
+        "namespace_dcs": "/service",
+        "ttl": 30,
+        "loop_wait": 10,
+        "retry_timeout": 10
+    }
+}

@@ -1,0 +1,59 @@
+version: '3.9'
+
+volumes:
+  etcd-data:
+
+services:
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.13
+    container_name: etcd
+    command:
+      - etcd
+      - --name=etcd
+      - --data-dir=data.etcd
+      - --advertise-client-urls=http://etcd:2379
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --initial-advertise-peer-urls=http://etcd:2380
+      - --listen-peer-urls=http://0.0.0.0:2380
+    volumes:
+      - etcd-data:/data.etcd
+    ports:
+      - 2379:2379
+    restart: always
+
+  cicd-service-01:
+    build: .
+    container_name: cicd-service-01
+    volumes:
+      - ./configs/config-test.json:/app/config.json
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 3000:3000
+    restart: always
+    depends_on:
+      - etcd
+
+  cicd-service-02:
+    build: .
+    container_name: cicd-service-02
+    volumes:
+      - ./configs/config-test.json:/app/config.json
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 3010:3000
+    restart: always
+    depends_on:
+      - etcd
+
+  cicd-service-03:
+    build: .
+    container_name: cicd-service-03
+    volumes:
+      - ./configs/config-test.json:/app/config.json
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 3020:3000
+    restart: always
+    depends_on:
+      - etcd
+

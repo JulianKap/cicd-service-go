@@ -1,0 +1,34 @@
+pipeline:
+  steps:
+    - name: Build
+      image: golang:1.22.1
+      commands:
+        - echo "Build cicd-service-go"
+        - go build -o cicd-service-go ./cmd/app
+        - echo "Build cicd-service-go DONE"
+
+    - name: Test
+      image: golang:1.22.1
+      commands:
+        - echo "Tests for cicd-service-go"
+        - go test ./... > test.txt
+        - cat test.txt
+        - grep -q FAIL test.txt && exit 1
+        - echo "Tests for cicd-service-go DONE"
+
+    - name: Build Docker Image
+      image: docker:latest
+      commands:
+        - echo "Build docker image cicd-service-go:latest"
+        - docker build -t cicd-service-go:latest .
+        - echo "Build docker image cicd-service-go:latest DONE"
+
+#    - name: Push Docker Image
+#      image: docker:latest
+#      commands:
+#        - docker push cicd-service-go:latest
+#
+#    - name: Deploy
+#      image:
+#      commands:
+#        - ./deploy.sh
