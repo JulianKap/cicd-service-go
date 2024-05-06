@@ -4,6 +4,8 @@ pipeline:
       image: golang:1.22.1
       commands:
         - echo "Build cicd-service-go"
+        - go mod download
+        - go mod verify
         - go build -o cicd-service-go ./cmd/app
         - echo "Build cicd-service-go DONE"
 
