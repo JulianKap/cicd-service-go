@@ -73,6 +73,8 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 		})
 	}
 
+	//secrets.SetToken()
+
 	project.APIKey = token
 	if err = project.createProjectETCD(db.InstanceETCD); err != nil {
 		log.Error("HandleProjectCreate #5: ", err)

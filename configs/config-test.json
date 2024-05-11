@@ -15,6 +15,10 @@
                 "http://etcd:2379"
             ],
             "dialTimeout": "5"
+        },
+        "vault": {
+            "addr": "http://vault:8200",
+            "token": "1237fdfas35dSD^*)_23sd"
         }
     },
     "logging": {

@@ -1,0 +1,15 @@
+@startuml
+package service{
+annotation service {
+
+
+-startFramework(): *Echo
+-initRoutes(e *Echo)
++Start()
+-runEchoServer(): *Echo
+-runProfilingServer()
+}
+}
+
+
+@enduml
