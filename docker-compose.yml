@@ -11,6 +11,7 @@ networks:
 volumes:
   etcd-data:
   vault-data:
+  registry-data:
 
 services:
   cicd-service-01:
@@ -57,7 +58,17 @@ services:
     ports:
       - "8200:8200"
     volumes:
-      - secrets-data:/secrets/data
+      - vault-data:/secrets/data
     cap_add:
       - IPC_LOCK
     restart: always
+
+  registry:
+    image: registry:2.8.3
+    container_name: registry
+    ports:
+      - "5000:5000"
+#    environment:
+#      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+    volumes:
+      - registry-data:/var/lib/registry

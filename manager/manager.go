@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	Conf        Config  // конфигурация кластера
-	MemberInfo  Member  // текущий экзмпляр сервисы
-	Keys        KeysDCS // ключи в DCS для управления кластером
+	Conf        Config  // Конфигурация кластера
+	MemberInfo  Member  // Текущий экземпляр сервисы
+	Keys        KeysDCS // Ключи в DCS для управления кластером
 	managerChan chan bool
 )
 
@@ -44,9 +44,9 @@ func InitManager() {
 	managerChan = make(chan bool)
 }
 
-//func GetMemberChan() chan bool {
-//	return managerChan
-//}
+func GetMemberChan() chan bool {
+	return managerChan
+}
 
 func RunManager() {
 	log.Info("RunManager #0: running UUID ", MemberInfo.UUID)
@@ -66,11 +66,11 @@ func RunManager() {
 }
 
 func tasksCluster() error {
-	// Инициализация кластера
-	if err := Conf.initializeCluster(); err != nil {
-		log.Error("tasksCluster #0: ", err)
-		return err
-	}
+	//// Инициализация кластера
+	//if err := Conf.initializeCluster(); err != nil {
+	//	log.Error("tasksCluster #0: ", err)
+	//	return err
+	//}
 
 	// Проверяем конфигурацию сервиса в etcd
 	if err := Conf.applyConfigurations(); err != nil {
@@ -94,13 +94,13 @@ func tasksCluster() error {
 			log.Error("tasksCluster #4: ", err)
 			return err
 		}
-		MemberInfo.Master = true
+		MemberInfo.Role = MasterRole
 
 		if !state.IAmMaster {
 			log.Info("tasksCluster #5: i became a MASTER!")
 		}
 	} else { // становимся слейвом
-		MemberInfo.Master = false
+		MemberInfo.Role = WorkerRole
 		log.Debug("tasksCluster #6: i became a SLAVE!")
 	}
 
@@ -114,8 +114,6 @@ func tasksCluster() error {
 		log.Error("tasksCluster #8: ", err)
 		return err
 	}
-
-	// Проверять таски для каждого воркера перед удалением. Либо удалять, а в шедулере будет своя логика распределения незаконченных задач
 
 	MemberInfo.ReadOnly = false
 

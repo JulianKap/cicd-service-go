@@ -9,37 +9,37 @@ import (
 )
 
 // tasksScheduler планирование всех заданий мастером
-func tasksScheduler() (standalone bool, err error) {
-	standalone = false
+func tasksScheduler() (bool, error) {
+	standalone := false
 
 	// Получаем список всех тасок
 	var tasks taskpkg.Tasks
-	if err := getTasksETCD(db.InstanceETCD, &tasks); err != nil {
+	if err := taskpkg.GetTasksETCD(db.InstanceETCD, &tasks); err != nil {
 		log.Error("tasksScheduler #0: ", err)
-		return standalone, err
+		return false, err
 	}
 
 	if len(tasks.Tasks) == 0 {
 		log.Debug("tasksScheduler #1: not found tasks")
-		return standalone, nil
+		return false, nil
 	}
 
 	// Получаем список всех членов кластера
 	members, err := manager.GetMembers()
 	if err != nil {
 		log.Error("tasksScheduler #2: ", err)
-		return standalone, err
+		return false, err
 	}
 
 	workers := manager.Members{}
 
 	if len(members.Members) == 0 {
 		log.Warn("tasksScheduler #3: not found members")
-		return standalone, nil
+		return false, nil
 	} else if len(members.Members) == 1 {
 		if members.Members[0].UUID != manager.MemberInfo.UUID {
 			log.Warn("tasksScheduler #4: one member in the cluster and is not me")
-			return standalone, nil
+			return false, nil
 		}
 		standalone = true
 
@@ -120,7 +120,7 @@ func tasksScheduler() (standalone bool, err error) {
 			p := sources.Project{
 				ID: t.ProjectID,
 			}
-			if _, err := deleteTaskByProjectETCD(db.InstanceETCD, &p, &t); err != nil {
+			if _, err := taskpkg.DeleteTaskByProjectETCD(db.InstanceETCD, &p, &t); err != nil {
 				log.Error("tasksScheduler #8: ", err)
 			}
 		} else {
@@ -180,7 +180,7 @@ func tasksScheduler() (standalone bool, err error) {
 
 	// todo: сделать удаление старых тасок в /projects/:id/tasks
 
-	return true, err
+	return true, nil
 }
 
 // setTaskInHistory перенос задания в список истории
@@ -192,19 +192,19 @@ func setTaskInHistory(task taskpkg.Task) error {
 }
 
 // tasksSchedulerWorker планирование заданий воркером
-func tasksSchedulerWorker() (err error, t taskpkg.Tasks) {
+func tasksSchedulerWorker() (taskpkg.Tasks, error) {
 	var tasksInQueue taskpkg.Tasks
 
 	// Получаем список своих задач
 	var tasks taskpkg.Tasks
 	if err := getTasksForWorker(db.InstanceETCD, manager.MemberInfo, &tasks); err != nil {
 		log.Error("runTasksWorker #0: ", err)
-		return err, tasksInQueue
+		return tasksInQueue, err
 	}
 
 	if len(tasks.Tasks) == 0 {
 		log.Debug("runTasksWorker #1: not found tasks")
-		return nil, tasksInQueue
+		return tasksInQueue, nil
 	}
 
 	for _, t := range tasks.Tasks {
@@ -227,7 +227,7 @@ func tasksSchedulerWorker() (err error, t taskpkg.Tasks) {
 		}
 	}
 
-	return err, tasksInQueue
+	return tasksInQueue, nil
 }
 
 // GetMemberWithMinTasks получение члена кластера с минимальным количеством заданий

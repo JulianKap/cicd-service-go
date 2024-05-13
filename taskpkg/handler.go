@@ -1,11 +1,10 @@
-package schedule
+package taskpkg
 
 import (
 	"cicd-service-go/constants"
 	"cicd-service-go/init/db"
 	"cicd-service-go/manager"
 	"cicd-service-go/sources"
-	"cicd-service-go/taskpkg"
 	"cicd-service-go/utility"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
@@ -15,11 +14,11 @@ import (
 )
 
 var (
-	Keys taskpkg.KeysDCS
+	Keys KeysDCS
 )
 
 func InitHandler() {
-	Keys = taskpkg.KeysDCS{
+	Keys = KeysDCS{
 		Tasks:        manager.Conf.Cluster.Namespace + constants.PROJECTS_TASKS,
 		TasksHistory: manager.Conf.Cluster.Namespace + constants.PROJECTS_TASKS_HISTORY,
 		TaskProject:  manager.Conf.Cluster.Namespace + constants.PROJECTS,
@@ -34,10 +33,10 @@ func HandleTaskCreate(ctx echo.Context) (err error) {
 		return ctx.JSON(codeValidation, respValidation)
 	}
 
-	var task taskpkg.Task
+	var task Task
 	if err := ctx.Bind(&task); err != nil {
 		log.Error("HandleTaskCreate #0: ", err)
-		return ctx.JSON(http.StatusBadRequest, taskpkg.TaskResponse{
+		return ctx.JSON(http.StatusBadRequest, TaskResponse{
 			Message: "Error convert struct task",
 			Error:   utility.StringPtr(err.Error()),
 		})
@@ -61,15 +60,15 @@ func HandleTaskCreate(ctx echo.Context) (err error) {
 		return ctx.JSON(codeValJob, respValJob)
 	}
 
-	if err := createTaskByProjectETCD(db.InstanceETCD, &project, &task); err != nil {
+	if err := task.setTaskByProjectETCD(db.InstanceETCD, &project); err != nil {
 		log.Error("HandleTaskCreate #1: ", err)
-		return ctx.JSON(http.StatusBadRequest, taskpkg.TasksResponse{
+		return ctx.JSON(http.StatusBadRequest, TasksResponse{
 			Message: "Error create task",
 			Error:   utility.StringPtr(err.Error()),
 		})
 	}
 
-	return ctx.JSON(http.StatusOK, taskpkg.TaskResponse{
+	return ctx.JSON(http.StatusOK, TaskResponse{
 		Task:    &task,
 		Message: "Task create",
 	})
@@ -88,16 +87,16 @@ func HandleTasksGetList(ctx echo.Context) (err error) {
 		return ctx.JSON(codeValPrj, respValPrj)
 	}
 
-	var tasks taskpkg.Tasks
-	if err := getTasksByProjectETCD(db.InstanceETCD, &project, &tasks); err != nil {
+	var tasks Tasks
+	if err := tasks.getTasksByProjectETCD(db.InstanceETCD, &project); err != nil {
 		log.Error("HandleTasksGetList #0: ", err)
-		return ctx.JSON(http.StatusInternalServerError, taskpkg.TasksResponse{
+		return ctx.JSON(http.StatusInternalServerError, TasksResponse{
 			Message: "Error get tasks list",
 			Error:   utility.StringPtr(err.Error()),
 		})
 	}
 
-	return ctx.JSON(http.StatusOK, taskpkg.TasksResponse{
+	return ctx.JSON(http.StatusOK, TasksResponse{
 		Tasks: &tasks,
 	})
 }
@@ -118,33 +117,33 @@ func HandleTaskGetByID(ctx echo.Context) (err error) {
 	taskID, err := strconv.Atoi(ctx.Param("id_task"))
 	if err != nil {
 		log.Error("HandleTaskGetByID #0: ", err)
-		return ctx.JSON(http.StatusBadRequest, taskpkg.TaskResponse{
+		return ctx.JSON(http.StatusBadRequest, TaskResponse{
 			Message: "Error convert id task",
 			Error:   utility.StringPtr(err.Error()),
 		})
 	}
 
-	task := taskpkg.Task{
+	task := Task{
 		ID:        taskID,
 		ProjectID: project.ID,
 	}
 
-	state, err := getTaskByProjectETCD(db.InstanceETCD, &task)
+	state, err := task.getTaskByProjectETCD(db.InstanceETCD)
 	if err != nil {
 		log.Error("HandleTaskGetByID #1: ", err)
-		return ctx.JSON(http.StatusInternalServerError, taskpkg.TaskResponse{
+		return ctx.JSON(http.StatusInternalServerError, TaskResponse{
 			Message: "Error get task",
 			Error:   utility.StringPtr(err.Error()),
 		})
 	}
 
 	if state {
-		return ctx.JSON(http.StatusOK, taskpkg.TaskResponse{
+		return ctx.JSON(http.StatusOK, TaskResponse{
 			Task: &task,
 		})
 	} else {
 		log.Info("HandleTaskGetByID #2: not found task")
-		return ctx.JSON(http.StatusBadRequest, taskpkg.TaskResponse{
+		return ctx.JSON(http.StatusBadRequest, TaskResponse{
 			Message: "Not found task",
 		})
 	}
@@ -166,29 +165,29 @@ func HandleTaskDeleteByID(ctx echo.Context) (err error) {
 	taskID, err := strconv.Atoi(ctx.Param("id_task"))
 	if err != nil {
 		log.Error("HandleTaskDeleteByID #0: ", err)
-		return ctx.JSON(http.StatusBadRequest, taskpkg.TaskResponse{
+		return ctx.JSON(http.StatusBadRequest, TaskResponse{
 			Message: "Error convert id task",
 			Error:   utility.StringPtr(err.Error()),
 		})
 	}
 
-	task := taskpkg.Task{
+	task := Task{
 		ID:        taskID,
 		ProjectID: project.ID,
 	}
 
-	state, err := deleteTaskByProjectETCD(db.InstanceETCD, &project, &task)
+	state, err := task.deleteTaskByProjectETCD(db.InstanceETCD, &project)
 	if err != nil {
 		log.Error("HandleTaskDeleteByID #1: ", err)
-		return ctx.JSON(http.StatusBadRequest, taskpkg.TaskResponse{
+		return ctx.JSON(http.StatusBadRequest, TaskResponse{
 			Error: utility.StringPtr(err.Error()),
 		})
 	}
 
 	if state {
-		return ctx.JSON(http.StatusOK, taskpkg.TaskResponse{Message: "Task delete"})
+		return ctx.JSON(http.StatusOK, TaskResponse{Message: "Task delete"})
 	} else {
 		log.Info("HandleTaskDeleteByID #2: not found task")
-		return ctx.JSON(http.StatusBadRequest, taskpkg.TaskResponse{Message: "Task not found"})
+		return ctx.JSON(http.StatusBadRequest, TaskResponse{Message: "Task not found"})
 	}
 }

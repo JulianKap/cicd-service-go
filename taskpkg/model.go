@@ -24,7 +24,7 @@ const (
 	Running                     // Задание выполняется
 	Completed                   // Задание завершена успешно
 	Failed                      // Задание завершена с ошибкой
-	Schedule                    // Задание распределено, RCoFно еще не запускалось
+	Schedule                    // Задание распределено, но еще не запускалось
 )
 
 // TaskResult содержит результат выполнения задания
@@ -47,7 +47,7 @@ type Task struct {
 	ID int `json:"id"`
 	// ProjectID идентификатор проекта, к которому относится таска
 	ProjectID int `json:"project_id"`
-	// JobID идентификатор задания, к которое запускает таска
+	// JobID идентификатор задания, которое запускает таска
 	JobID int `json:"job_id"`
 	// Name название таски
 	Name string `json:"name,omitempty"`

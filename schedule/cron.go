@@ -40,7 +40,7 @@ func RunCron() {
 	for {
 		select {
 		case <-CloseCronChan:
-			log.Info("RunCron #0: сlose RunCron")
+			log.Info("RunCron #0: exit RunCron")
 			return
 		case <-scheduleTicker.C:
 			if err := runSchedule(); err != nil {
@@ -54,12 +54,17 @@ func runSchedule() error {
 	сhanLock()
 	defer сhanUnlock()
 
-	if manager.MemberInfo.Master {
-		log.Debug("runSchedule #0: run scheduler as MASTER")
+	if manager.MemberInfo.ReadOnly {
+		log.Debug("runSchedule #0: service in read only mode")
+		return nil
+	}
+
+	if manager.MemberInfo.Role == manager.MasterRole {
+		log.Debug("runSchedule #1: run scheduler as MASTER")
 
 		standalone, err := tasksScheduler()
 		if err != nil {
-			log.Error("runSchedule #1: ", err)
+			log.Error("runSchedule #2: ", err)
 			return err
 		}
 
@@ -67,19 +72,19 @@ func runSchedule() error {
 			return nil
 		}
 
-		log.Debug("runSchedule #2: continuation of work in mode STANDALONE")
+		log.Debug("runSchedule #3: continuation of work in mode STANDALONE")
 	}
 
-	log.Debug("runSchedule #3: run scheduler for Worker")
+	log.Debug("runSchedule #4: run scheduler for Worker")
 
-	err, tasks := tasksSchedulerWorker()
+	tasks, err := tasksSchedulerWorker()
 	if err != nil {
-		log.Error("runSchedule #4: ", err)
+		log.Error("runSchedule #5: ", err)
 		return err
 	}
 
 	if len(tasks.Tasks) == 0 {
-		log.Debug("runSchedule #5: not found actual tasks for ", manager.MemberInfo.UUID)
+		log.Debug("runSchedule #6: not found actual tasks for ", manager.MemberInfo.UUID)
 		return nil
 	}
 
@@ -91,14 +96,14 @@ func runSchedule() error {
 
 		j, err := getJobEtcd(t)
 		if err != nil {
-			log.Error("runSchedule #6: ", err)
+			log.Error("runSchedule #7: ", err)
 			continue
 		}
 
 		// Получение пайплайна
 		p, err := pipeline.GetPipeline(j)
 		if err != nil {
-			log.Error("runSchedule #7: ", err)
+			log.Error("runSchedule #8: ", err)
 			//todo: возможно тоже нужно отмечать такие задания в etcd с другим статусом
 			continue
 		}
@@ -108,7 +113,8 @@ func runSchedule() error {
 
 		// Запуск выполнения пайплайна
 		if err := worker.RunWorkerTask(j, p, t); err != nil {
-			log.Error("runSchedule #8: ", err)
+			log.Error("runSchedule #9: ", err)
+
 			t.Status.Status = taskpkg.Failed
 			t.Status.Message = err.Error()
 			t.Status.RetryCount++
@@ -119,7 +125,7 @@ func runSchedule() error {
 		}
 
 		if err := updateTaskForWorker(db.InstanceETCD, manager.MemberInfo, &t); err != nil {
-			log.Error("runSchedule #9: ", err)
+			log.Error("runSchedule #10: ", err)
 			continue
 		}
 	}

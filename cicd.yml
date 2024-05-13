@@ -21,12 +21,15 @@ pipeline:
       commands:
         - echo "Build docker image cicd-service-go:latest"
         - docker build -t cicd-service-go:latest .
+        - docker tag cicd-service-go:latest registry:5000/cicd-service-go:latest
+        - docker push registry:5000/cicd-service-go:latest
         - echo "Build docker image cicd-service-go:latest DONE"
 
     - name: Push Docker Image
       image: docker:latest
       commands:
-        - docker push cicd-service-go:latest
+        - docker tag cicd-service-go:latest registry:5000/cicd-service-go:latest
+        - docker push registry:5000/cicd-service-go:latest
 
     - name: Deploy
       image:

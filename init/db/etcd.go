@@ -21,7 +21,7 @@ var InstanceETCD *clientv3.Client
 func InitInstanceETCD() {
 	InstanceETCD = initETCD(etcdConnectionOptions{
 		endpoints:   viper.GetStringSlice("database.etcd.endpoints"),
-		dialTimeout: viper.GetInt("database.etcd.dialTimeout"),
+		dialTimeout: viper.GetInt("database.etcd.timeout_s"),
 	})
 }
 

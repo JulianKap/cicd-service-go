@@ -365,7 +365,7 @@ func HandleJobDeleteByID(ctx echo.Context) (err error) {
 // ValidatePermission валидация доступных прав для данного запущенного экземпляра сервиса
 func ValidatePermission() (int, Response) {
 	// Если мы не мастер, то отклоняем данный запрос
-	if !manager.MemberInfo.Master {
+	if manager.MemberInfo.Role != manager.MasterRole {
 		log.Info("validatePermission #0: not master")
 		return http.StatusMethodNotAllowed, Response{Message: "I am SLAVE! Slave not support management projects and jobs"}
 	}

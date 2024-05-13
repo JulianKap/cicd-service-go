@@ -28,12 +28,21 @@ type Config struct {
 	Cluster ClusterConfig `json:"cluster"`
 }
 
+// RoleStatus роль, в которой сервис работает
+type RoleStatus int
+
+const (
+	WorkerRole     RoleStatus = iota // Режим воркера
+	MasterRole                       // Режим мастера
+	StandaloneRole                   // Режим все в одном для одиночного разворачивания
+)
+
 // Member настройки данного экземпляра сервиса
 type Member struct {
-	// UUID уникальный id запущенного экзмепляра сервиса
+	// UUID уникальный id запущенного экземпляра сервиса
 	UUID string `json:"uuid"`
-	// Master
-	Master bool `json:"master"`
+	// Роль
+	Role RoleStatus `json:"role"`
 	// ReadOnly режим работы только для чтения (когда состояние кластера неизвестно)
 	ReadOnly bool `json:"read_only"`
 }
