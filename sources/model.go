@@ -5,9 +5,9 @@ type Credentials struct {
 	// Username пользователь
 	Username string `json:"username"`
 	// Password пароль пользователя
-	Password string `json:"password"`
+	Password string `json:"-"`
 	// Token токен авторизации
-	Token string `json:"token,omitempty"`
+	Token string `json:"-"`
 }
 
 // Project представляет информацию о проекте
@@ -15,7 +15,7 @@ type Project struct {
 	// ID уникальный id проекта
 	ID int `json:"id,omitempty"`
 	// APIKey токен для работы с проектом
-	APIKey string `json:"api_key,omitempty"`
+	APIKey string `json:"-"`
 	// ProjectName название проекта
 	ProjectName string `json:"project_name"`
 }
