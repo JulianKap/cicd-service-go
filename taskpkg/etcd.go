@@ -1,7 +1,9 @@
 package taskpkg
 
 import (
+	"cicd-service-go/constants"
 	"cicd-service-go/db/etcd"
+	"cicd-service-go/manager"
 	"cicd-service-go/sources"
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
@@ -9,9 +11,30 @@ import (
 	"strconv"
 )
 
+// GetKeyTasks получение ключ всех заданий для всех проектов
+func GetKeyTasks() string {
+	return manager.Conf.Cluster.Namespace + constants.PROJECTS_TASKS
+}
+
+// GetKeyTasksHistory получение ключ истории всех заданий
+func GetKeyTasksHistory() string {
+	return manager.Conf.Cluster.Namespace + constants.PROJECTS_TASKS_HISTORY
+}
+
+// GetKeyLatestIdTask получить ключ идентификатора последнего задания
+func GetKeyLatestIdTask() string {
+	return manager.Conf.Cluster.Namespace + constants.PROJECTS_TASKS_LATEST_ID
+}
+
+// GetKeyTaskProject получение конкретного задания у конкретного проекта
+func GetKeyTaskProject(t *Task) string {
+	return sources.GetKeyProject(&sources.Project{ID: t.ProjectID}) + constants.TASKS + "/" + strconv.Itoa(t.ID)
+}
+
 // getTasksETCD получить список всех заданий из etcd по всем проектам
 func (t *Tasks) getTasksETCD(cli *clientv3.Client) error {
-	resp, err := etcd.GetKey(cli, Keys.Tasks)
+	key := GetKeyTasks()
+	resp, err := etcd.GetKey(cli, key)
 	if err != nil {
 		log.Error("getTasksETCD #0: ", err)
 		return err
@@ -19,10 +42,10 @@ func (t *Tasks) getTasksETCD(cli *clientv3.Client) error {
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 { // Ключ не найден
-		log.Info("getTasksETCD #1: key ", Keys.Tasks, " not found")
+		log.Info("getTasksETCD #1: key ", key, " not found")
 		return nil
 	} else if len(resp.Kvs) > 1 { // Больше одного ключа
-		log.Warning("getTasksETCD #2: key ", Keys.Tasks, " get more than one key")
+		log.Warning("getTasksETCD #2: key ", key, " get more than one key")
 	}
 
 	if err := json.Unmarshal(resp.Kvs[0].Value, &t); err != nil {
@@ -45,7 +68,7 @@ func (t *Tasks) setTasksETCD(cli *clientv3.Client) error {
 		return err
 	}
 
-	if err = etcd.SetKey(cli, Keys.Tasks, string(tasksJSON)); err != nil {
+	if err = etcd.SetKey(cli, GetKeyTasks(), string(tasksJSON)); err != nil {
 		log.Error("setTasksETCD #3: ", err)
 		return err
 	}
@@ -72,7 +95,7 @@ func (t *Tasks) getTasksByProjectETCD(cli *clientv3.Client, p *sources.Project) 
 
 // getTaskByProjectETCD получить указанное задание по проекту
 func (t *Task) getTaskByProjectETCD(cli *clientv3.Client) (bool, error) {
-	key := Keys.TaskProject + "/" + strconv.Itoa(t.ProjectID) + "/tasks/" + strconv.Itoa(t.ID) //todo: править
+	key := GetKeyTaskProject(t)
 	resp, err := etcd.GetKey(cli, key)
 	if err != nil {
 		log.Error("getTaskByProjectETCD #0: ", err)
@@ -97,9 +120,9 @@ func (t *Task) getTaskByProjectETCD(cli *clientv3.Client) (bool, error) {
 
 // setTaskByProjectETCD создание задания
 func (t *Task) setTaskByProjectETCD(cli *clientv3.Client, p *sources.Project) error {
-	latestId, err := sources.GetLatestIdETCD(cli, Keys.TaskLatestId)
+	latestId, err := etcd.GetKeyInt(cli, GetKeyLatestIdTask())
 	if err != nil {
-		log.Error("createTaskByProjectETCD #0: ", err)
+		log.Error("setTaskByProjectETCD #0: ", err)
 		return err
 	}
 
@@ -111,43 +134,42 @@ func (t *Task) setTaskByProjectETCD(cli *clientv3.Client, p *sources.Project) er
 	// Добавление тасок в общий список
 	var tasks Tasks
 	if err := tasks.getTasksByProjectETCD(cli, p); err != nil {
-		log.Error("createTaskByProjectETCD #1: ", err)
+		log.Error("setTaskByProjectETCD #1: ", err)
 		return err
 	}
 	// Добавление задания в общий список заданий
 	tasks.Tasks = append(tasks.Tasks, *t)
 	if err = tasks.setTasksETCD(cli); err != nil {
-		log.Error("createTaskByProjectETCD #2: ", err)
+		log.Error("setTaskByProjectETCD #2: ", err)
 		return err
 	}
 
 	// Добавление задания к своему проекту
 	taskJSON, err := json.Marshal(t)
 	if err != nil {
-		log.Error("createTaskByProjectETCD #3: ", err)
+		log.Error("setTaskByProjectETCD #3: ", err)
 		return err
 	}
 
-	key := Keys.TaskProject + "/" + strconv.Itoa(t.ProjectID) + "/tasks/" + strconv.Itoa(t.ID) //todo: править
-	if err = etcd.SetKey(cli, key, string(taskJSON)); err != nil {
-		log.Error("createTaskByProjectETCD #4: ", err)
+	if err = etcd.SetKey(cli, GetKeyTaskProject(t), string(taskJSON)); err != nil {
+		log.Error("setTaskByProjectETCD #4: ", err)
 		return err
 	}
 
 	// Добавление последнего ID задания
-	if err = etcd.SetKey(cli, Keys.TaskLatestId, strconv.Itoa(t.ID)); err != nil {
-		log.Error("createTaskByProjectETCD #5: ", err)
+	if err = etcd.SetKey(cli, GetKeyLatestIdTask(), strconv.Itoa(t.ID)); err != nil {
+		log.Error("setTaskByProjectETCD #5: ", err)
 		return err
 	}
 
 	return nil
 }
 
-// deleteTaskByProjectETCD удаление задания
-func (t *Task) deleteTaskByProjectETCD(cli *clientv3.Client, p *sources.Project) (bool, error) {
+// delTaskByProjectETCD удаление задания
+func (t *Task) delTaskByProjectETCD(cli *clientv3.Client, p *sources.Project) (bool, error) {
 	var tasks Tasks
 	if err := tasks.getTasksByProjectETCD(cli, p); err != nil {
-		log.Error("deleteTaskByProjectETCD #0: ", err)
+		log.Error("delTaskByProjectETCD #0: ", err)
 		return false, err
 	}
 
@@ -163,20 +185,19 @@ func (t *Task) deleteTaskByProjectETCD(cli *clientv3.Client, p *sources.Project)
 
 	valueJSON, err := json.Marshal(newTasks)
 	if err != nil {
-		log.Error("deleteTaskByProjectETCD #1: ", err)
+		log.Error("delTaskByProjectETCD #1: ", err)
 		return state, err
 	}
 
 	// Обновляем список всех тасок
-	if err = etcd.SetKey(cli, Keys.Tasks, string(valueJSON)); err != nil {
-		log.Error("deleteTaskByProjectETCD #2: ", err)
+	if err = etcd.SetKey(cli, GetKeyTasks(), string(valueJSON)); err != nil {
+		log.Error("delTaskByProjectETCD #2: ", err)
 		return state, err
 	}
 
 	// Удаляем таску
-	key := Keys.TaskProject + "/" + strconv.Itoa(t.ProjectID) + "/tasks/" + strconv.Itoa(t.ID) //todo: править
-	if err = etcd.DelKey(cli, key); err != nil {
-		log.Error("deleteTaskByProjectETCD #3: ", err)
+	if err = etcd.DelKey(cli, GetKeyTaskProject(t)); err != nil {
+		log.Error("delTaskByProjectETCD #3: ", err)
 		return state, err
 	}
 
@@ -191,6 +212,6 @@ func GetTasksETCD(cli *clientv3.Client, t *Tasks) error {
 	return t.getTasksETCD(cli)
 }
 
-func DeleteTaskByProjectETCD(cli *clientv3.Client, p *sources.Project, t *Task) (bool, error) {
-	return t.deleteTaskByProjectETCD(cli, p)
+func DelTaskByProjectETCD(cli *clientv3.Client, p *sources.Project, t *Task) (bool, error) {
+	return t.delTaskByProjectETCD(cli, p)
 }

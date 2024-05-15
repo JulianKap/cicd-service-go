@@ -1,7 +1,6 @@
 package sources
 
 import (
-	"cicd-service-go/constants"
 	"cicd-service-go/init/db"
 	"cicd-service-go/manager"
 	"cicd-service-go/utility"
@@ -11,18 +10,6 @@ import (
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
-
-var (
-	Keys KeysDCS
-)
-
-func InitHandler() {
-	Keys = KeysDCS{
-		Projects: manager.Conf.Cluster.Namespace + constants.PROJECTS_ALL,
-		LatestID: manager.Conf.Cluster.Namespace + constants.PROJECT_LATEST_ID,
-		Project:  manager.Conf.Cluster.Namespace + constants.PROJECTS + "/",
-	}
-}
 
 func HandleProjectCreate(ctx echo.Context) (err error) {
 	codeValPerm, respValPerm := ValidatePermission()
@@ -254,7 +241,7 @@ func HandleJobsGetList(ctx echo.Context) (err error) {
 	}
 
 	var project Project
-	codeValPrj, respValPrj := ValidateProjectById(ctx, &project, "id")
+	codeValPrj, respValPrj := ValidateProjectById(ctx, &project, "id_project")
 	if codeValPrj != http.StatusOK {
 		return ctx.JSON(codeValPrj, respValPrj)
 	}

@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"strconv"
 )
 
 // getTasksForWorker получить список всех заданий для воркера
@@ -138,8 +137,7 @@ func updateAllTasks(cli *clientv3.Client, tasks *taskpkg.Tasks) error {
 			continue
 		}
 
-		key := manager.Conf.Cluster.Namespace + constants.PROJECTS + "/" + strconv.Itoa(t.ProjectID) + "/tasks/" + strconv.Itoa(t.ID) //todo: править
-		if err = etcd.SetKey(cli, key, string(taskJSON)); err != nil {
+		if err = etcd.SetKey(cli, taskpkg.GetKeyTaskProject(&t), string(taskJSON)); err != nil {
 			log.Error("updateAllTasks #2: ", err)
 			continue
 		}

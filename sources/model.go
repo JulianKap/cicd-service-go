@@ -1,14 +1,5 @@
 package sources
 
-// KeysDCS ключи в DCS
-type KeysDCS struct {
-	// Projects ключ проектов
-	Projects string `json:"projects"`
-	LatestID string `json:"latest_id"`
-	Project  string `json:"project"`
-	Job      string `json:"job"`
-}
-
 // Credentials креды для авторизации
 type Credentials struct {
 	// Username пользователь

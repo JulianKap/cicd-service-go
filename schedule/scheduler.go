@@ -120,7 +120,7 @@ func tasksScheduler() (bool, error) {
 			p := sources.Project{
 				ID: t.ProjectID,
 			}
-			if _, err := taskpkg.DeleteTaskByProjectETCD(db.InstanceETCD, &p, &t); err != nil {
+			if _, err := taskpkg.DelTaskByProjectETCD(db.InstanceETCD, &p, &t); err != nil {
 				log.Error("tasksScheduler #8: ", err)
 			}
 		} else {

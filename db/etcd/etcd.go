@@ -2,6 +2,7 @@ package etcd
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -102,6 +103,34 @@ func GetKey(cli *clientv3.Client, key string) (*clientv3.GetResponse, error) {
 	}
 
 	return resp, nil
+}
+
+// GetKeyInt получить ключ в формате int (если можно преобразовать)
+func GetKeyInt(cli *clientv3.Client, key string) (int, error) {
+	id := -1
+
+	resp, err := GetKey(cli, key)
+	if err != nil {
+		log.Error("GetKeyInt #0: ", err)
+		return id, err
+	}
+
+	// Проверка наличия ключа
+	if len(resp.Kvs) == 0 { // Ключ не найден
+		log.Info("GetKeyInt #1: key ", key, " not found")
+		return id, nil
+	} else if len(resp.Kvs) > 1 { // Больше одного ключа
+		log.Warning("GetKeyInt #2: key ", key, " get more than one key")
+	}
+
+	value := string(resp.Kvs[0].Value)
+	id, err = strconv.Atoi(value)
+	if err != nil {
+		log.Error("GetKeyInt #3: ", err)
+		return id, err
+	}
+
+	return id, nil
 }
 
 // DelKey удалить ключ из etcd

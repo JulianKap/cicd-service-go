@@ -10,10 +10,10 @@ import (
 )
 
 var (
-	Conf        Config  // Конфигурация кластера
-	MemberInfo  Member  // Текущий экземпляр сервисы
-	Keys        KeysDCS // Ключи в DCS для управления кластером
-	managerChan chan bool
+	Conf             Config  // Конфигурация кластера
+	MemberInfo       Member  // Текущий экземпляр сервисы
+	Keys             KeysDCS // Ключи в DCS для управления кластером
+	CloseManagerChan chan bool
 )
 
 func InitManager() {
@@ -41,11 +41,7 @@ func InitManager() {
 	MemberInfo.UUID = uniqueID
 	Keys.Worker = Keys.Workers + "/" + uniqueID
 
-	managerChan = make(chan bool)
-}
-
-func GetMemberChan() chan bool {
-	return managerChan
+	CloseManagerChan = make(chan bool)
 }
 
 func RunManager() {
@@ -54,7 +50,7 @@ func RunManager() {
 	clusterTicker := time.NewTicker(time.Duration(Conf.Cluster.RetryTimeout) * time.Second)
 	for {
 		select {
-		case <-managerChan:
+		case <-CloseManagerChan:
 			log.Info("RunManager #0: close checking cluster state")
 			return
 		case <-clusterTicker.C:

@@ -16,6 +16,10 @@ const (
 
 	JOBS          = "/jobs"
 	JOB_LATEST_ID = "/jobs/latest_id"
+
+	TASKS           = "/tasks"
+	TASKS_LATEST_ID = "/tasks/latest_id"
+	
 	// Настройки подключения
 	CONTEXT_TIMEOUT_ETCD = 5 // todo: добавить в контексте
 	// todo: добавить длину токена генериации, чтоб было 16 символов

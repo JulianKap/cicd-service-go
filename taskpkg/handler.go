@@ -1,9 +1,7 @@
 package taskpkg
 
 import (
-	"cicd-service-go/constants"
 	"cicd-service-go/init/db"
-	"cicd-service-go/manager"
 	"cicd-service-go/sources"
 	"cicd-service-go/utility"
 	"github.com/labstack/echo/v4"
@@ -12,19 +10,6 @@ import (
 	"strconv"
 	"time"
 )
-
-var (
-	Keys KeysDCS
-)
-
-func InitHandler() {
-	Keys = KeysDCS{
-		Tasks:        manager.Conf.Cluster.Namespace + constants.PROJECTS_TASKS,
-		TasksHistory: manager.Conf.Cluster.Namespace + constants.PROJECTS_TASKS_HISTORY,
-		TaskProject:  manager.Conf.Cluster.Namespace + constants.PROJECTS,
-		TaskLatestId: manager.Conf.Cluster.Namespace + constants.PROJECTS_TASKS_LATEST_ID,
-	}
-}
 
 // HandleTaskCreate создание таски
 func HandleTaskCreate(ctx echo.Context) (err error) {
@@ -47,20 +32,20 @@ func HandleTaskCreate(ctx echo.Context) (err error) {
 	task.CreateAt = &tm
 
 	// Проверка существования проекта
-	project := sources.Project{ID: task.ProjectID}
-	codeValPrj, respValPrj := sources.ValidateProject(&project)
+	p := sources.Project{ID: task.ProjectID}
+	codeValPrj, respValPrj := sources.ValidateProject(&p)
 	if codeValPrj != http.StatusOK {
 		return ctx.JSON(codeValPrj, respValPrj)
 	}
 
 	// Проверка существования задачи
-	job := sources.Job{ID: task.JobID}
-	codeValJob, respValJob := sources.ValidateJob(&project, &job)
+	j := sources.Job{ID: task.JobID}
+	codeValJob, respValJob := sources.ValidateJob(&p, &j)
 	if codeValJob != http.StatusOK {
 		return ctx.JSON(codeValJob, respValJob)
 	}
 
-	if err := task.setTaskByProjectETCD(db.InstanceETCD, &project); err != nil {
+	if err := task.setTaskByProjectETCD(db.InstanceETCD, &p); err != nil {
 		log.Error("HandleTaskCreate #1: ", err)
 		return ctx.JSON(http.StatusBadRequest, TasksResponse{
 			Message: "Error create task",
@@ -176,7 +161,7 @@ func HandleTaskDeleteByID(ctx echo.Context) (err error) {
 		ProjectID: project.ID,
 	}
 
-	state, err := task.deleteTaskByProjectETCD(db.InstanceETCD, &project)
+	state, err := task.delTaskByProjectETCD(db.InstanceETCD, &project)
 	if err != nil {
 		log.Error("HandleTaskDeleteByID #1: ", err)
 		return ctx.JSON(http.StatusBadRequest, TaskResponse{

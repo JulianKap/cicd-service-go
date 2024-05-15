@@ -4,18 +4,6 @@ import (
 	"time"
 )
 
-// KeysDCS ключи в DCS
-type KeysDCS struct {
-	// Tasks все таски
-	Tasks string `json:"tasks"`
-	// TasksHistory история выполнения тасок
-	TasksHistory string `json:"tasks_history"`
-	// TaskProject таски конкретного проекта
-	TaskProject string `json:"task_project"`
-	// TaskLatestId крайний id таски
-	TaskLatestId string `json:"task_latest_id"`
-}
-
 // TaskStatus представляет статус выполнения задания
 type TaskStatus int
 
@@ -75,25 +63,3 @@ type TasksResponse struct {
 	Message string  `json:"message,omitempty"`
 	Error   *string `json:"error,omitempty"`
 }
-
-//
-//type ITask interface {
-//	GetActive() error
-//	IsZeroID() bool
-//	SetStatus(string)
-//	Save() error
-//	Finish() error
-//	GetJSON() ([]byte, error)
-//}
-//
-//type TaskWorker struct {
-//	TaskType    string
-//	TaskName    string
-//	Running     bool
-//	controlChan chan int `json:"-"`
-//
-//	//hub         worker.IWorkerHub
-//	CurrentTask *Task
-//
-//	cancel context.CancelFunc
-//}
