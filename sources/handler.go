@@ -105,7 +105,7 @@ func HandleProjectGetByID(ctx echo.Context) (err error) {
 		return ctx.JSON(codeValPerm, respValPerm)
 	}
 
-	projectID, err := strconv.Atoi(ctx.Param("id"))
+	projectID, err := strconv.Atoi(ctx.Param("id_project"))
 	if err != nil {
 		log.Error("HandleProjectGetByID #0: ", err)
 		return ctx.JSON(http.StatusBadRequest, ProjectResponse{
@@ -145,7 +145,7 @@ func HandleProjectDeleteByID(ctx echo.Context) (err error) {
 		return ctx.JSON(codeValPerm, respValPerm)
 	}
 
-	projectID, err := strconv.Atoi(ctx.Param("id"))
+	projectID, err := strconv.Atoi(ctx.Param("id_project"))
 	if err != nil {
 		log.Error("HandleProjectDeleteByID #0: ", err)
 		return ctx.JSON(http.StatusBadRequest, ProjectResponse{

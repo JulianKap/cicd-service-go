@@ -24,8 +24,8 @@ func initRoutes(e *echo.Echo) {
 	project := e.Group("/project")
 	project.PUT("/create", sources.HandleProjectCreate, allProjectsAuthMiddleware)
 	project.GET("/all", sources.HandleProjectsGetList, allProjectsAuthMiddleware)
-	project.GET("/:id", sources.HandleProjectGetByID, allProjectsAuthMiddleware)
-	project.DELETE("/:id", sources.HandleProjectDeleteByID, allProjectsAuthMiddleware)
+	project.GET("/:id_project", sources.HandleProjectGetByID, allProjectsAuthMiddleware)
+	project.DELETE("/:id_project", sources.HandleProjectDeleteByID, allProjectsAuthMiddleware)
 
 	// Jobs
 	jobs := project.Group("/jobs")
@@ -39,7 +39,7 @@ func initRoutes(e *echo.Echo) {
 	// Tasks
 	tasks := project.Group("/tasks")
 	tasks.PUT("/create", taskpkg.HandleTaskCreate)
-	tasks.GET("/:id/all", taskpkg.HandleTasksGetList)
+	tasks.GET("/:id_project/all", taskpkg.HandleTasksGetList)
 	tasks.GET("/:id_project/:id_task", taskpkg.HandleTaskGetByID)
 	tasks.DELETE("/:id_project/:id_task", taskpkg.HandleTaskDeleteByID)
 
@@ -55,39 +55,4 @@ func initRoutes(e *echo.Echo) {
 	e.GET("/hc", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, nil)
 	})
-}
-
-func AllProjectsAuthMiddleware() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			token := c.Request().Header.Get("Authorization")
-
-			// todo: брать токен из файла конфигурации
-			test_current_token := "12345678"
-			if token != "Bearer "+test_current_token {
-				return echo.NewHTTPError(http.StatusUnauthorized, "Invalid token")
-			}
-
-			return next(c)
-		}
-	}
-}
-
-func ProjectAuthMiddleware() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			//token := c.Request().Header.Get("Authorization")
-			//projectID := c.Param("id_project")
-			//
-			// todo: брать токен для конкретного проекта из vault
-			//// Получить токен из vault
-			//
-			//if token != secret.Data["token"].(string) {
-			//	return echo.NewHTTPError(http.StatusUnauthorized, "Invalid token")
-			//}
-
-			// Продолжаем выполнение цепочки обработчиков, если токен действителен
-			return next(c)
-		}
-	}
 }

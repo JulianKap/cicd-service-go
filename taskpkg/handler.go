@@ -67,7 +67,7 @@ func HandleTasksGetList(ctx echo.Context) (err error) {
 	}
 
 	var project sources.Project
-	codeValPrj, respValPrj := sources.ValidateProjectById(ctx, &project, "id")
+	codeValPrj, respValPrj := sources.ValidateProjectById(ctx, &project, "id_project")
 	if codeValPrj != http.StatusOK {
 		return ctx.JSON(codeValPrj, respValPrj)
 	}

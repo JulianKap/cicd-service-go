@@ -23,37 +23,40 @@ func RunWorkerTask(j sources.Job, p pipeline.Pipeline, t taskpkg.Task) (err erro
 
 		if s.Image == "" {
 			log.Warn("RunWorkerTask #2: not image in step=", s.Name, " (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
+
+			//todo: сделать вариант запуска локально, если нет image
+
 			return errors.New("image is null")
-		}
+		} else {
+			commands, err := taskpkg.PrepareStepCommand(j, s)
+			if err != nil {
+				log.Error("RunWorkerTask #3: ", err)
+				return err
+			}
 
-		commands, err := taskpkg.PrepareStepCommand(j, s)
-		if err != nil {
-			log.Error("RunWorkerTask #3: ", err)
-			return err
-		}
+			if commands == "" {
+				log.Warn("RunWorkerTask #4: command is null step=", s.Name, " (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
+				return errors.New("commands is null")
+			}
 
-		if commands == "" {
-			log.Warn("RunWorkerTask #4: command is null step=", s.Name, " (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
-			return errors.New("commands is null")
-		}
+			// todo: проверить наличие образа, чтобы не пулить
+			//wg.Add(1)
+			if err := scripts.PullImage(&wg, s.Image); err != nil {
+				log.Error("RunWorkerTask #5: ", err)
+				return err
+			}
+			//go scripts.PullImage(&wg, s.Image)
+			//wg.Wait()
 
-		// todo: проверить наличие образа, чтобы не пулить
-		//wg.Add(1)
-		if err := scripts.PullImage(&wg, s.Image); err != nil {
-			log.Error("RunWorkerTask #5: ", err)
-			return err
+			//wg.Add(1)
+			if err := scripts.RunCommandImage(&wg, s.Image, commands); err != nil {
+				log.Error("RunWorkerTask #6: ", err)
+				//continue
+				return err
+			}
+			//go scripts.RunCommandImage(&wg, s)
+			//wg.Wait()
 		}
-		//go scripts.PullImage(&wg, s.Image)
-		//wg.Wait()
-
-		//wg.Add(1)
-		if err := scripts.RunCommandImage(&wg, s.Image, commands); err != nil {
-			log.Error("RunWorkerTask #6: ", err)
-			//continue
-			return err
-		}
-		//go scripts.RunCommandImage(&wg, s)
-		//wg.Wait()
 	}
 
 	// todo: Использовать патерн пайплайн

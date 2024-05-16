@@ -11,6 +11,7 @@ networks:
 volumes:
   etcd-data:
   vault-data:
+  registry-data:
 
 services:
   cicd-service-01:
@@ -74,7 +75,7 @@ services:
 
   vault:
     image: vault:1.13.3
-    container_name: secrets
+    container_name: vault
     environment:
       VAULT_ADDR: "http://127.0.0.1:8200"
       VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID}
@@ -82,7 +83,17 @@ services:
     ports:
       - "8200:8200"
     volumes:
-      - secrets-data:/secrets/data
+      - vault-data:/secrets/data
     cap_add:
       - IPC_LOCK
     restart: always
+
+  registry:
+    image: registry:2.8.3
+    container_name: registry
+    ports:
+      - "5000:5000"
+    #    environment:
+    #      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+    volumes:
+      - registry-data:/var/lib/registry

@@ -9,14 +9,14 @@ pipeline:
         - go build -o cicd-service-go ./cmd/app
         - echo "Build cicd-service-go DONE"
 
-#    - name: Test
-#      image: golang:1.22.1
-#      commands:
-#        - echo "Tests for cicd-service-go"
-#        - go test ./...
-#        - echo "Tests for cicd-service-go DONE"
+    - name: Test
+      image: golang:1.22.1
+      commands:
+        - echo "Tests for cicd-service-go"
+        - go test ./...
+        - echo "Tests for cicd-service-go DONE"
 
-    - name: Build Docker Image
+    - name: Build and Push docker image
       image: docker:latest
       commands:
         - echo "Build docker image cicd-service-go:latest"
@@ -24,12 +24,6 @@ pipeline:
         - docker tag cicd-service-go:latest registry:5000/cicd-service-go:latest
         - docker push registry:5000/cicd-service-go:latest
         - echo "Build docker image cicd-service-go:latest DONE"
-
-    - name: Push Docker Image
-      image: docker:latest
-      commands:
-        - docker tag cicd-service-go:latest registry:5000/cicd-service-go:latest
-        - docker push registry:5000/cicd-service-go:latest
 
     - name: Deploy
       image:
