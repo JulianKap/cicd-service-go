@@ -17,8 +17,8 @@ func startFramework() *echo.Echo {
 }
 
 func initRoutes(e *echo.Echo) {
-	allProjectsAuthMiddleware := AllProjectsAuthMiddleware()
-	projectAuthMiddleware := ProjectAuthMiddleware()
+	allProjectsAuthMiddleware := allProjectsAuthMiddleware()
+	projectAuthMiddleware := projectAuthMiddleware()
 
 	// Projects
 	project := e.Group("/project")

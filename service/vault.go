@@ -9,8 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// СheckTokenVault проверка токена авторизации
-func СheckTokenVault(cli *api.Client, p *sources.Project, t *vault.Token) (bool, error) {
+// checkTokenVault проверка токена авторизации
+func checkTokenVault(cli *api.Client, p *sources.Project, t *vault.Token) (bool, error) {
 	var tVal vault.Token
 	tVal.Path = fmt.Sprintf("project/%s/token", p.ProjectName)
 

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"net"
 	"os"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -90,4 +91,14 @@ func GetHostIP() ([]net.IP, error) {
 		}
 	}
 	return ips, nil
+}
+
+// RemovePrefixAuthBearer удаление префикса базовой авторизации для выделения токена
+func RemovePrefixAuthBearer(t string) string {
+	pref := "Bearer "
+	if strings.HasPrefix(t, pref) {
+		return strings.TrimPrefix(t, pref)
+	}
+
+	return t
 }
