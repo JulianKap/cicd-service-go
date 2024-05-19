@@ -29,7 +29,7 @@ func initRoutes(e *echo.Echo) {
 
 	// Jobs
 	jobs := project.Group("/jobs")
-	jobs.PUT("/create", sources.HandleJobCreate, projectAuthMiddleware)
+	jobs.PUT("/:id_project/create", sources.HandleJobCreate, projectAuthMiddleware)
 	jobs.GET("/:id_project/all", sources.HandleJobsGetList, projectAuthMiddleware)
 	jobs.GET("/:id_project/:id_job", sources.HandleJobGetByID, projectAuthMiddleware)
 	jobs.DELETE("/:id_project/:id_job", sources.HandleJobDeleteByID, projectAuthMiddleware)
@@ -38,10 +38,10 @@ func initRoutes(e *echo.Echo) {
 
 	// Tasks
 	tasks := project.Group("/tasks")
-	tasks.PUT("/create", taskpkg.HandleTaskCreate)
-	tasks.GET("/:id_project/all", taskpkg.HandleTasksGetList)
-	tasks.GET("/:id_project/:id_task", taskpkg.HandleTaskGetByID)
-	tasks.DELETE("/:id_project/:id_task", taskpkg.HandleTaskDeleteByID)
+	tasks.PUT("/:id_project/create", taskpkg.HandleTaskCreate, projectAuthMiddleware)
+	tasks.GET("/:id_project/all", taskpkg.HandleTasksGetList, projectAuthMiddleware)
+	tasks.GET("/:id_project/:id_task", taskpkg.HandleTaskGetByID, projectAuthMiddleware)
+	tasks.DELETE("/:id_project/:id_task", taskpkg.HandleTaskDeleteByID, projectAuthMiddleware)
 
 	// Проверка на мастера
 	e.GET("/master", func(c echo.Context) error {

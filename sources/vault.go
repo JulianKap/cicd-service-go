@@ -16,7 +16,7 @@ func (p *Project) createTokenProjectVault(cli *api.Client, t *vault.Token) error
 		return err
 	}
 	t.Token = token
-	t.Path = fmt.Sprintf("project/%s/token", p.ProjectName)
+	t.Path = GetProjectPathToken(p)
 
 	if err = vault.SetToken(cli, t); err != nil {
 		log.Error("createTokenProjectVault #0: ", err)
@@ -24,4 +24,10 @@ func (p *Project) createTokenProjectVault(cli *api.Client, t *vault.Token) error
 	}
 
 	return nil
+}
+
+// GetProjectPathToken получить путь к токену авторизации проекта
+func GetProjectPathToken(p *Project) string {
+	return fmt.Sprintf("secret/data/project/%s", p.ProjectName)
+	//return fmt.Sprintf("project/%s/token", p.ProjectName)
 }

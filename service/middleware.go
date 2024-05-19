@@ -32,21 +32,32 @@ func projectAuthMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			token := utility.RemovePrefixAuthBearer(c.Request().Header.Get("Authorization"))
+			if token == "" {
+				log.Error("projectAuthMiddleware #0: Not found token authorized")
+				return echo.NewHTTPError(http.StatusBadRequest, "Not found token authorized")
+			}
 
 			projectID, err := strconv.Atoi(c.Param("id_project"))
 			if err != nil {
-				log.Error("projectAuthMiddleware #0: ", err)
+				log.Error("projectAuthMiddleware #1: ", err)
 				return echo.NewHTTPError(http.StatusBadRequest, "Bad project_id")
 			}
 
-			ok, err := checkTokenVault(secrets.InstanceVault, &sources.Project{ID: projectID}, &vault.Token{Token: token})
+			p := sources.Project{ID: projectID}
+			codeValPrj, _ := sources.ValidateProject(&p)
+			if codeValPrj != http.StatusOK {
+				log.Error("projectAuthMiddleware #2: bad project_id")
+				return echo.NewHTTPError(http.StatusBadRequest, "Bad project_id")
+			}
+
+			ok, err := checkTokenVault(secrets.InstanceVault, &p, &vault.Token{Token: token})
 			if err != nil {
-				log.Error("projectAuthMiddleware #1: ", err)
+				log.Error("projectAuthMiddleware #3: ", err)
 				return echo.NewHTTPError(http.StatusInternalServerError, "Internal error")
 			}
 
 			if !ok {
-				log.Info("projectAuthMiddleware #2: invalid token=", token)
+				log.Info("projectAuthMiddleware #4: invalid token=", token)
 				return echo.NewHTTPError(http.StatusUnauthorized, "Invalid token")
 			}
 

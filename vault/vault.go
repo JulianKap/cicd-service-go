@@ -1,13 +1,20 @@
 package vault
 
 import (
+	"errors"
 	"github.com/hashicorp/vault/api"
 	log "github.com/sirupsen/logrus"
 )
 
 // SetToken добавление токена
 func SetToken(cli *api.Client, t *Token) error {
-	if _, err := cli.Logical().Write(t.Path, map[string]interface{}{"token": t.Token}); err != nil {
+	data := map[string]interface{}{
+		"data": map[string]interface{}{
+			"token": t.Token,
+		},
+	}
+
+	if _, err := cli.Logical().Write(t.Path, data); err != nil {
 		log.Error("SetToken #0: ", err)
 		return err
 	}
@@ -23,15 +30,22 @@ func GetToken(cli *api.Client, t *Token) error {
 		return err
 	}
 
-	if secret == nil {
+	if secret == nil || secret.Data == nil {
 		log.Error("GetToken #1: token not found ", t.Path)
 	}
 
-	token, ok := secret.Data["token"].(string)
+	data, ok := secret.Data["data"].(map[string]interface{})
 	if !ok {
-		log.Error("GetToken #2: ", err)
-		return err
+		log.Error("GetToken #2: invalid data format at path ", t.Path)
+		return errors.New("Invalid data format at path: " + t.Path)
 	}
+
+	token, ok := data["token"].(string)
+	if !ok {
+		log.Println("GetToken #3: not found at path ", t.Path)
+		return errors.New("Not found at path: " + t.Path)
+	}
+
 	t.Token = token
 
 	return nil

@@ -2,8 +2,10 @@ package sources
 
 import (
 	"cicd-service-go/init/db"
+	"cicd-service-go/init/secrets"
 	"cicd-service-go/manager"
 	"cicd-service-go/utility"
+	"cicd-service-go/vault"
 	"net/http"
 	"strconv"
 
@@ -17,8 +19,8 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 		return ctx.JSON(codeValPerm, respValPerm)
 	}
 
-	var project Project
-	if err := ctx.Bind(&project); err != nil {
+	var p Project
+	if err := ctx.Bind(&p); err != nil {
 		log.Error("HandleProjectCreate #0: ", err)
 		return ctx.JSON(http.StatusBadRequest, Response{
 			Message: "Error convert struct project",
@@ -26,7 +28,7 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 		})
 	}
 
-	if project.ProjectName == "" {
+	if p.ProjectName == "" {
 		log.Info("HandleProjectCreate #1: ", err)
 		return ctx.JSON(http.StatusBadRequest, Response{
 			Message: "Empty project name",
@@ -42,8 +44,8 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 		})
 	}
 
-	for _, p := range projects.Projects {
-		if project.ProjectName == p.ProjectName {
+	for _, project := range projects.Projects {
+		if p.ProjectName == project.ProjectName {
 			log.Info("HandleProjectCreate #3: project name already exists")
 			return ctx.JSON(http.StatusBadRequest, Response{
 				Message: "Project name already exists",
@@ -51,8 +53,8 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 		}
 	}
 
-	token, err := utility.GenerateToken(16)
-	if err != nil {
+	var t vault.Token
+	if err := p.createTokenProjectVault(secrets.InstanceVault, &t); err != nil {
 		log.Error("HandleProjectCreate #4: ", err)
 		return ctx.JSON(http.StatusInternalServerError, Response{
 			Message: "Error generate access token",
@@ -60,10 +62,8 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 		})
 	}
 
-	//secrets.SetToken()
-
-	project.APIKey = token
-	if err = project.createProjectETCD(db.InstanceETCD); err != nil {
+	//p.TokenId = t.TokenId
+	if err = p.createProjectETCD(db.InstanceETCD); err != nil {
 		log.Error("HandleProjectCreate #5: ", err)
 		return ctx.JSON(http.StatusBadRequest, Response{
 			Message: "Error create project",
@@ -73,7 +73,8 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 
 	return ctx.JSON(http.StatusOK, ProjectResponse{
 		Message: "Project created",
-		Project: &project,
+		Project: &p,
+		Token:   t.Token,
 	})
 }
 

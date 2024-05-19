@@ -14,8 +14,8 @@ type Credentials struct {
 type Project struct {
 	// ID уникальный id проекта
 	ID int `json:"id,omitempty"`
-	// APIKey токен для работы с проектом
-	APIKey string `json:"-"`
+	// TokenId id токена для работы с проектом
+	//TokenId string `json:"token_id"`
 	// ProjectName название проекта
 	ProjectName string `json:"project_name"`
 }
@@ -66,6 +66,7 @@ type Response struct {
 
 type ProjectResponse struct {
 	Project *Project `json:"project"`
+	Token   string   `json:"token,omitempty"`
 	Message string   `json:"message,omitempty"`
 	Error   *string  `json:"error,omitempty"`
 }
