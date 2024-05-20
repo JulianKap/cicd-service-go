@@ -32,9 +32,8 @@ type Config struct {
 type RoleStatus int
 
 const (
-	WorkerRole     RoleStatus = iota // Режим воркера
-	MasterRole                       // Режим мастера
-	StandaloneRole                   // Режим все в одном для одиночного разворачивания
+	WorkerRole RoleStatus = iota // Режим воркера
+	MasterRole                   // Режим мастера
 )
 
 // Member настройки данного экземпляра сервиса
@@ -43,6 +42,8 @@ type Member struct {
 	UUID string `json:"uuid"`
 	// Роль
 	Role RoleStatus `json:"role"`
+	// Standalone режим все в одном для одиночного разворачивания
+	Standalone bool `json:"standalone"`
 	// ReadOnly режим работы только для чтения (когда состояние кластера неизвестно)
 	ReadOnly bool `json:"read_only"`
 }

@@ -89,11 +89,17 @@ func tasksScheduler() (bool, error) {
 				} else {
 					taskInHistory = true
 				}
-			} else if t.Status.Status == taskpkg.Pending || t.Status.Status == taskpkg.Running {
+			} else if t.Status.Status == taskpkg.Pending {
+				if okWorker {
+					continue
+				}
+			} else if t.Status.Status == taskpkg.Running {
 				if okWorker {
 					// todo: добавить дедлайн на выполнение задания, и если превышение, то отменяем задание.
 					continue // Не трогаем задание
 				}
+
+				taskInHistory = true
 			}
 		} else if t.Status.Status == taskpkg.Pending {
 			taskInHistory = false

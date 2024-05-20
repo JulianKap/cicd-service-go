@@ -139,10 +139,11 @@ func (c *ClusterConfig) updateMembers(m *Member) error {
 		return err
 	}
 
-	if err := delMembers.delMembersETCD(db.InstanceETCD); err != nil {
-		log.Error("updateMembers #4: ", err)
-		return err
-	}
+	//todo:сделать реестр старых членов кластера с лимитом на кол-во элементов
+	//if err := delMembers.delMembersETCD(db.InstanceETCD); err != nil {
+	//	log.Error("updateMembers #4: ", err)
+	//	return err
+	//}
 
 	return nil
 }
