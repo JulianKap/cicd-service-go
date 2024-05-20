@@ -51,8 +51,8 @@ func RunCron() {
 }
 
 func runSchedule() error {
-	сhanLock()
-	defer сhanUnlock()
+	//сhanLock()
+	//defer сhanUnlock()
 
 	if manager.MemberInfo.ReadOnly {
 		log.Debug("runSchedule #0: service in read only mode")
@@ -74,6 +74,9 @@ func runSchedule() error {
 
 		log.Debug("runSchedule #3: continuation of work in mode STANDALONE")
 	}
+
+	сhanLock()
+	defer сhanUnlock()
 
 	log.Debug("runSchedule #4: run scheduler for Worker")
 

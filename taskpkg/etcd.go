@@ -165,43 +165,45 @@ func (t *Task) setTaskByProjectETCD(cli *clientv3.Client, p *sources.Project) er
 	return nil
 }
 
-// delTaskByProjectETCD удаление задания
-func (t *Task) delTaskByProjectETCD(cli *clientv3.Client, p *sources.Project) (bool, error) {
+// markerDelTaskByProjectETCD отметить задачу как удаляемую. Планировщик все проверит и сам ее удалит
+func (t *Task) markerDelTaskByProjectETCD(cli *clientv3.Client, p *sources.Project) (bool, error) {
 	var tasks Tasks
 	if err := tasks.getTasksByProjectETCD(cli, p); err != nil {
-		log.Error("delTaskByProjectETCD #0: ", err)
+		log.Error("markerDelTaskByProjectETCD #0: ", err)
 		return false, err
 	}
 
 	state := false
-	var newTasks Tasks
 	for _, task := range tasks.Tasks {
-		if t.ID != task.ID {
-			newTasks.Tasks = append(newTasks.Tasks, task)
-		} else {
+		if t.ID == task.ID {
+			task.Status.Status = Removing //Отмечаем, что задание нужно удалить
 			state = true
 		}
 	}
 
-	valueJSON, err := json.Marshal(newTasks)
+	valueJSON, err := json.Marshal(tasks)
 	if err != nil {
-		log.Error("delTaskByProjectETCD #1: ", err)
+		log.Error("markerDelTaskByProjectETCD #1: ", err)
 		return state, err
 	}
 
 	// Обновляем список всех тасок
 	if err = etcd.SetKey(cli, GetKeyTasks(), string(valueJSON)); err != nil {
-		log.Error("delTaskByProjectETCD #2: ", err)
+		log.Error("markerDelTaskByProjectETCD #2: ", err)
 		return state, err
 	}
 
-	// Удаляем таску
-	if err = etcd.DelKey(cli, GetKeyTaskProject(t)); err != nil {
-		log.Error("delTaskByProjectETCD #3: ", err)
-		return state, err
-	}
+	//// Удаляем таску
+	//if err = etcd.DelKey(cli, GetKeyTaskProject(t)); err != nil {
+	//	log.Error("markerDelTaskByProjectETCD #3: ", err)
+	//	return state, err
+	//}
 
 	return state, nil
+}
+
+func GetTasksByProjectETCD(cli *clientv3.Client, p *sources.Project, t *Tasks) error {
+	return t.getTasksByProjectETCD(cli, p)
 }
 
 func SetTasksETCD(cli *clientv3.Client, t *Tasks) error {
@@ -210,8 +212,4 @@ func SetTasksETCD(cli *clientv3.Client, t *Tasks) error {
 
 func GetTasksETCD(cli *clientv3.Client, t *Tasks) error {
 	return t.getTasksETCD(cli)
-}
-
-func DelTaskByProjectETCD(cli *clientv3.Client, p *sources.Project, t *Task) (bool, error) {
-	return t.delTaskByProjectETCD(cli, p)
 }

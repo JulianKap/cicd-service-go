@@ -161,7 +161,7 @@ func HandleTaskDeleteByID(ctx echo.Context) (err error) {
 		ProjectID: project.ID,
 	}
 
-	state, err := task.delTaskByProjectETCD(db.InstanceETCD, &project)
+	state, err := task.markerDelTaskByProjectETCD(db.InstanceETCD, &project)
 	if err != nil {
 		log.Error("HandleTaskDeleteByID #1: ", err)
 		return ctx.JSON(http.StatusBadRequest, TaskResponse{
