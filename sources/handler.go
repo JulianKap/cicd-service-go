@@ -62,7 +62,6 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 		})
 	}
 
-	//p.TokenId = t.TokenId
 	if err = p.createProjectETCD(db.InstanceETCD); err != nil {
 		log.Error("HandleProjectCreate #5: ", err)
 		return ctx.JSON(http.StatusBadRequest, Response{
@@ -71,10 +70,10 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 		})
 	}
 
+	p.Token = t.Token
 	return ctx.JSON(http.StatusOK, ProjectResponse{
 		Message: "Project created",
 		Project: &p,
-		Token:   t.Token,
 	})
 }
 
@@ -94,8 +93,17 @@ func HandleProjectsGetList(ctx echo.Context) (err error) {
 		})
 	}
 
+	for _, p := range projects.Projects {
+		var t vault.Token
+		t.Path = GetProjectPathToken(p)
+		if err := vault.GetToken(secrets.InstanceVault, &t); err != nil {
+			log.Error("HandleProjectsGetList #1: ", err)
+		}
+		p.Token = t.Token
+	}
+
 	return ctx.JSON(http.StatusOK, ProjectsResponse{
-		Projects: &projects,
+		Projects: projects.Projects,
 	})
 }
 
@@ -115,10 +123,10 @@ func HandleProjectGetByID(ctx echo.Context) (err error) {
 		})
 	}
 
-	project := Project{
+	p := Project{
 		ID: projectID,
 	}
-	state, err := getProjectETCD(db.InstanceETCD, &project)
+	state, err := getProjectETCD(db.InstanceETCD, &p)
 	if err != nil {
 		log.Error("HandleProjectGetByID #1: ", err)
 		return ctx.JSON(http.StatusInternalServerError, ProjectResponse{
@@ -127,12 +135,22 @@ func HandleProjectGetByID(ctx echo.Context) (err error) {
 		})
 	}
 
+	var t vault.Token
+	t.Path = GetProjectPathToken(&p)
+	if err := vault.GetToken(secrets.InstanceVault, &t); err != nil {
+		log.Error("HandleProjectGetByID #2: ", err)
+		return ctx.JSON(http.StatusInternalServerError, Response{
+			Message: "Not found token for project " + p.ProjectName,
+		})
+	}
+
+	p.Token = t.Token
 	if state {
 		return ctx.JSON(http.StatusOK, ProjectResponse{
-			Project: &project,
+			Project: &p,
 		})
 	} else {
-		log.Info("HandleProjectGetByID #2: not found project")
+		log.Info("HandleProjectGetByID #3: not found project")
 		return ctx.JSON(http.StatusBadRequest, Response{
 			Message: "Not found project",
 		})
@@ -257,7 +275,7 @@ func HandleJobsGetList(ctx echo.Context) (err error) {
 	}
 
 	return ctx.JSON(http.StatusOK, JobsResponse{
-		Jobs: &jobs,
+		Jobs: jobs.Jobs,
 	})
 }
 

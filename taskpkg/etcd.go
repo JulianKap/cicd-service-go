@@ -42,7 +42,7 @@ func (t *Tasks) getTasksETCD(cli *clientv3.Client) error {
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 { // Ключ не найден
-		log.Info("getTasksETCD #1: key ", key, " not found")
+		log.Debug("getTasksETCD #1: key ", key, " not found")
 		return nil
 	} else if len(resp.Kvs) > 1 { // Больше одного ключа
 		log.Warning("getTasksETCD #2: key ", key, " get more than one key")
@@ -104,7 +104,7 @@ func (t *Task) getTaskByProjectETCD(cli *clientv3.Client) (bool, error) {
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 { // Ключ не найден
-		log.Info("getTaskByProjectETCD #1: key ", key, " not found")
+		log.Debug("getTaskByProjectETCD #1: key ", key, " not found")
 		return false, nil
 	} else if len(resp.Kvs) > 1 { // Больше одного ключа
 		log.Warning("getTaskByProjectETCD #2: key ", key, " get more than one key")
@@ -138,7 +138,7 @@ func (t *Task) setTaskByProjectETCD(cli *clientv3.Client, p *sources.Project) er
 		return err
 	}
 	// Добавление задания в общий список заданий
-	tasks.Tasks = append(tasks.Tasks, *t)
+	tasks.Tasks = append(tasks.Tasks, t)
 	if err = tasks.setTasksETCD(cli); err != nil {
 		log.Error("setTaskByProjectETCD #2: ", err)
 		return err

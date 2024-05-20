@@ -82,7 +82,7 @@ func HandleTasksGetList(ctx echo.Context) (err error) {
 	}
 
 	return ctx.JSON(http.StatusOK, TasksResponse{
-		Tasks: &tasks,
+		Tasks: tasks.Tasks,
 	})
 }
 

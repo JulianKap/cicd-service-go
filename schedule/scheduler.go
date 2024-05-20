@@ -77,7 +77,8 @@ func tasksScheduler() (bool, error) {
 				UUID: t.Status.WorkerUUID,
 			}
 
-			if err := getTaskForWorker(db.InstanceETCD, m, &t); err != nil {
+			// Получаем статус задания у самого воркера и решаем что дальше делания с заданием
+			if err := getTaskForWorker(db.InstanceETCD, m, t); err != nil {
 				log.Error("tasksScheduler #6: ", err)
 			}
 
@@ -102,7 +103,7 @@ func tasksScheduler() (bool, error) {
 				} else {
 					taskInHistory = true
 				}
-			} else if t.Status.Status == taskpkg.Pending || t.Status.Status == taskpkg.Running {
+			} else if t.Status.Status == taskpkg.Pending || t.Status.Status == taskpkg.Running || t.Status.Status == taskpkg.Schedule {
 				if okWorker {
 					continue
 				}
@@ -112,7 +113,7 @@ func tasksScheduler() (bool, error) {
 		}
 
 		if taskInHistory {
-			if err := setTaskInHistory(t); err != nil {
+			if err := setTaskInHistory(*t); err != nil {
 				log.Error("tasksScheduler #7: ", err)
 			}
 
@@ -120,7 +121,7 @@ func tasksScheduler() (bool, error) {
 			p := sources.Project{
 				ID: t.ProjectID,
 			}
-			if _, err := taskpkg.DelTaskByProjectETCD(db.InstanceETCD, &p, &t); err != nil {
+			if _, err := taskpkg.DelTaskByProjectETCD(db.InstanceETCD, &p, t); err != nil {
 				log.Error("tasksScheduler #8: ", err)
 			}
 		} else {
@@ -138,14 +139,16 @@ func tasksScheduler() (bool, error) {
 			// Отмечаем uuid воркера, на который распределено задание
 			t.Status.WorkerUUID = manager.MemberInfo.UUID
 			tasksInQueue.Tasks[j].Status.WorkerUUID = manager.MemberInfo.UUID
-			tasksInQueue.Tasks[j].Status.Status = taskpkg.Schedule
+			tasksInQueue.Tasks[j].Status.Status = taskpkg.Pending // для воркера отмечаем статус в ожидании
 
-			ok, err := setTaskForWorker(db.InstanceETCD, manager.MemberInfo, &t)
+			ok, err := setTaskForWorker(db.InstanceETCD, manager.MemberInfo, t)
 			if err != nil {
 				log.Error("tasksScheduler #10: ", err)
 			}
 
-			if !ok {
+			if ok {
+				tasksInQueue.Tasks[j].Status.Status = taskpkg.Schedule // для общего списка, что задание было распределено наа воркер
+			} else {
 				// todo: как вариат, отмечать или просто пропускать такие таски
 			}
 		}
@@ -160,14 +163,16 @@ func tasksScheduler() (bool, error) {
 			// Отмечаем uuid воркера, на который распределено задание
 			t.Status.WorkerUUID = m.UUID
 			tasksInQueue.Tasks[j].Status.WorkerUUID = m.UUID
-			tasksInQueue.Tasks[j].Status.Status = taskpkg.Schedule
+			tasksInQueue.Tasks[j].Status.Status = taskpkg.Pending // для воркера отмечаем статус в ожидании
 
-			ok, err := setTaskForWorker(db.InstanceETCD, *m, &t)
+			ok, err := setTaskForWorker(db.InstanceETCD, *m, t)
 			if err != nil {
 				log.Error("tasksScheduler #12: ", err)
 			}
 
-			if !ok {
+			if ok {
+				tasksInQueue.Tasks[j].Status.Status = taskpkg.Schedule // для общего списка, что задание было распределено наа воркер
+			} else {
 				// todo: распределить данную таску на другого воркера
 			}
 		}

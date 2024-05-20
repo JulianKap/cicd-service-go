@@ -102,6 +102,8 @@ func (c *ClusterConfig) updateMembers(m *Member) error {
 	newMembers := Members{}
 	newMembers.Members = append(newMembers.Members, *m)
 
+	delMembers := Members{}
+
 	if res != nil {
 		if len(res.Members) > 0 {
 			if m.Role == MasterRole {
@@ -116,8 +118,9 @@ func (c *ClusterConfig) updateMembers(m *Member) error {
 						}
 
 						if validate {
-							newMembers.Members = append(newMembers.Members, mbr)
-							// todo: как вариант, нужно будет удалять вручную ключи воркеров
+							newMembers.Members = append(newMembers.Members, mbr) // Актуальные члены члены кластера
+						} else {
+							delMembers.Members = append(delMembers.Members, mbr) // Не актуальные
 						}
 					}
 				}
@@ -133,6 +136,11 @@ func (c *ClusterConfig) updateMembers(m *Member) error {
 
 	if err := newMembers.setMembersETCD(db.InstanceETCD); err != nil {
 		log.Error("updateMembers #3: ", err)
+		return err
+	}
+
+	if err := delMembers.delMembersETCD(db.InstanceETCD); err != nil {
+		log.Error("updateMembers #4: ", err)
 		return err
 	}
 

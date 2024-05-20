@@ -49,7 +49,7 @@ type Task struct {
 
 // Tasks список тасок
 type Tasks struct {
-	Tasks []Task `json:"tasks"`
+	Tasks []*Task `json:"tasks"`
 }
 
 type TaskResponse struct {
@@ -59,7 +59,7 @@ type TaskResponse struct {
 }
 
 type TasksResponse struct {
-	Tasks   *Tasks  `json:"tasks"`
+	Tasks   []*Task `json:"tasks"`
 	Message string  `json:"message,omitempty"`
 	Error   *string `json:"error,omitempty"`
 }

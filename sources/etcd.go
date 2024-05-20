@@ -52,7 +52,7 @@ func getProjectsETCD(cli *clientv3.Client, p *Projects) error {
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 { // Ключ не найден
-		log.Info("getProjectsETCD #1: key ", key, " not found")
+		log.Debug("getProjectsETCD #1: key ", key, " not found")
 		return nil
 	} else if len(resp.Kvs) > 1 { // Больше одного ключа
 		log.Warning("getProjectsETCD #2: key ", key, " get more than one key")
@@ -77,7 +77,7 @@ func getProjectETCD(cli *clientv3.Client, p *Project) (bool, error) {
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 { // Ключ не найден
-		log.Info("getProjectETCD #1: key ", key, " not found")
+		log.Debug("getProjectETCD #1: key ", key, " not found")
 		return false, nil
 	} else if len(resp.Kvs) > 1 { // Больше одного ключа
 		log.Warning("getProjectETCD #2: key ", key, " get more than one key")
@@ -110,7 +110,7 @@ func (p *Project) createProjectETCD(cli *clientv3.Client) error {
 		log.Error("createProjectETCD #1: ", err)
 		return err
 	}
-	projects.Projects = append(projects.Projects, *p)
+	projects.Projects = append(projects.Projects, p)
 
 	projectsJSON, err := json.Marshal(projects)
 	if err != nil {
@@ -209,7 +209,7 @@ func (p *Project) getJobsETCD(cli *clientv3.Client, j *Jobs) error {
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 { // Ключ не найден
-		log.Info("getJobs #1: key ", key, " not found")
+		log.Debug("getJobs #1: key ", key, " not found")
 		return nil
 	} else if len(resp.Kvs) > 1 { // Больше одного ключа
 		log.Warning("getJobs #2: key ", key, " get more than one key")
@@ -234,7 +234,7 @@ func (p *Project) GetJobETCD(cli *clientv3.Client, j *Job) (bool, error) {
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 { // Ключ не найден
-		log.Info("getJob #1: key ", key, " not found")
+		log.Debug("getJob #1: key ", key, " not found")
 		return false, nil
 	} else if len(resp.Kvs) > 1 { // Больше одного ключа
 		log.Warning("getJob #2: key ", key, " get more than one key")
@@ -268,7 +268,7 @@ func (p *Project) createJobETCD(cli *clientv3.Client, j *Job) error {
 		log.Error("createJob #1: ", err)
 		return err
 	}
-	jobs.Jobs = append(jobs.Jobs, *j)
+	jobs.Jobs = append(jobs.Jobs, j)
 
 	jobsJSON, err := json.Marshal(jobs)
 	if err != nil {

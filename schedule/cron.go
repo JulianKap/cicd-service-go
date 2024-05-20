@@ -94,7 +94,7 @@ func runSchedule() error {
 			continue
 		}
 
-		j, err := getJobEtcd(t)
+		j, err := getJobEtcd(*t)
 		if err != nil {
 			log.Error("runSchedule #7: ", err)
 			continue
@@ -112,7 +112,7 @@ func runSchedule() error {
 		t.CreateAt = &tm
 
 		// Запуск выполнения пайплайна
-		if err := worker.RunWorkerTask(j, p, t); err != nil {
+		if err := worker.RunWorkerTask(j, p, *t); err != nil {
 			log.Error("runSchedule #9: ", err)
 
 			t.Status.Status = taskpkg.Failed
@@ -124,7 +124,7 @@ func runSchedule() error {
 			t.Status.Status = taskpkg.Completed
 		}
 
-		if err := updateTaskForWorker(db.InstanceETCD, manager.MemberInfo, &t); err != nil {
+		if err := updateTaskForWorker(db.InstanceETCD, manager.MemberInfo, t); err != nil {
 			log.Error("runSchedule #10: ", err)
 			continue
 		}

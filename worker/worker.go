@@ -24,7 +24,7 @@ func RunWorkerTask(j sources.Job, p pipeline.Pipeline, t taskpkg.Task) (err erro
 		if s.Image == "" {
 			log.Warn("RunWorkerTask #2: not image in step=", s.Name, " (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
 
-			//todo: сделать вариант запуска локально, если нет image
+			// todo: сделать вариант запуска локально, если нет image
 
 			return errors.New("image is null")
 		} else {

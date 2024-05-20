@@ -23,7 +23,7 @@ func getTasksForWorker(cli *clientv3.Client, m manager.Member, t *taskpkg.Tasks)
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 { // Ключ не найден
-		log.Info("getTasksForWorker #1: key ", key, " not found")
+		log.Debug("getTasksForWorker #1: key ", key, " not found")
 		return nil
 	} else if len(resp.Kvs) > 1 { // Больше одного ключа
 		log.Warning("getTasksForWorker #2: key ", key, " get more than one key")
@@ -52,7 +52,7 @@ func setTaskForWorker(cli *clientv3.Client, m manager.Member, t *taskpkg.Task) (
 		}
 	}
 
-	tasks.Tasks = append(tasks.Tasks, *t)
+	tasks.Tasks = append(tasks.Tasks, t)
 
 	tasksJSON, err := json.Marshal(tasks)
 	if err != nil {
@@ -99,7 +99,7 @@ func updateTaskForWorker(cli *clientv3.Client, m manager.Member, t *taskpkg.Task
 	for _, task := range tasks.Tasks {
 		if task.ID == t.ID {
 			log.Debug("updateTaskForWorker #1: update status task on ", t.Status.Status, " (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
-			newTasks.Tasks = append(newTasks.Tasks, *t)
+			newTasks.Tasks = append(newTasks.Tasks, t)
 		} else {
 			newTasks.Tasks = append(newTasks.Tasks, task)
 		}
@@ -137,7 +137,7 @@ func updateAllTasks(cli *clientv3.Client, tasks *taskpkg.Tasks) error {
 			continue
 		}
 
-		if err = etcd.SetKey(cli, taskpkg.GetKeyTaskProject(&t), string(taskJSON)); err != nil {
+		if err = etcd.SetKey(cli, taskpkg.GetKeyTaskProject(t), string(taskJSON)); err != nil {
 			log.Error("updateAllTasks #2: ", err)
 			continue
 		}
