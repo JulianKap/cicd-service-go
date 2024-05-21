@@ -14,4 +14,4 @@ High-Aviability cicd-service-go
 
 
 ### Supported setups of CI/CD cluster
-![cicd_cluster](doc/ha_architecture.png#gh-light-mode-only)
+![cicd_cluster](doc/ha_architecture.png)
