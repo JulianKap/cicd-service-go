@@ -1,5 +1,6 @@
-HA cicd-service-go
+High-Aviability cicd-service-go
 ===
+[<img src="https://github.com/JulianKap/cicd-service-go/workflows/Go/badge.svg?branch=master">](https://github.com/JulianKap/cicd-service-go/actions?query=workflow%3AGo)
 Сервис высокой доступности для построения CI/CD конвейера.
 
 
