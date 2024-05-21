@@ -2,8 +2,8 @@ package service
 
 import (
 	"cicd-service-go/manager"
-	"cicd-service-go/schedule"
 	"cicd-service-go/sources"
+	"cicd-service-go/taskpkg"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )
@@ -17,36 +17,35 @@ func startFramework() *echo.Echo {
 }
 
 func initRoutes(e *echo.Echo) {
-	sources.InitHandler()
-	schedule.InitHandler()
+	allProjectsAuthMiddleware := allProjectsAuthMiddleware()
+	projectAuthMiddleware := projectAuthMiddleware()
 
-	// Проекты
+	// Projects
 	project := e.Group("/project")
-	project.PUT("/create", sources.HandleProjectCreate)
-	project.GET("/all", sources.HandleProjectsGetList)
-	project.GET("/:id", sources.HandleProjectGetByID)
-	project.DELETE("/:id", sources.HandleProjectDeleteByID)
+	project.PUT("/create", sources.HandleProjectCreate, allProjectsAuthMiddleware)
+	project.GET("/all", sources.HandleProjectsGetList, allProjectsAuthMiddleware)
+	project.GET("/:id_project", sources.HandleProjectGetByID, allProjectsAuthMiddleware)
+	project.DELETE("/:id_project", sources.HandleProjectDeleteByID, allProjectsAuthMiddleware)
 
-	// Задачи
+	// Jobs
 	jobs := project.Group("/jobs")
-	jobs.PUT("/create", sources.HandleJobCreate)
-	jobs.GET("/:id/all", sources.HandleJobsGetList)
-	jobs.GET("/:id_project/:id_job", sources.HandleJobGetByID)
-	jobs.DELETE("/:id_project/:id_job", sources.HandleJobDeleteByID)
+	jobs.PUT("/:id_project/create", sources.HandleJobCreate, projectAuthMiddleware)
+	jobs.GET("/:id_project/all", sources.HandleJobsGetList, projectAuthMiddleware)
+	jobs.GET("/:id_project/:id_job", sources.HandleJobGetByID, projectAuthMiddleware)
+	jobs.DELETE("/:id_project/:id_job", sources.HandleJobDeleteByID, projectAuthMiddleware)
 
 	// todo: сделать роуты для обновления проектов, задач
-	// В частности обновление названий, токенов, кредов
 
-	// Таски
+	// Tasks
 	tasks := project.Group("/tasks")
-	tasks.PUT("/create", schedule.HandleTaskCreate)
-	tasks.GET("/:id/all", schedule.HandleTasksGetList)
-	tasks.GET("/:id_project/:id_task", schedule.HandleTaskGetByID)
-	tasks.DELETE("/:id_project/:id_task", schedule.HandleTaskDeleteByID)
+	tasks.PUT("/:id_project/create", taskpkg.HandleTaskCreate, projectAuthMiddleware)
+	tasks.GET("/:id_project/all", taskpkg.HandleTasksGetList, projectAuthMiddleware)
+	tasks.GET("/:id_project/:id_task", taskpkg.HandleTaskGetByID, projectAuthMiddleware)
+	tasks.DELETE("/:id_project/:id_task", taskpkg.HandleTaskDeleteByID, projectAuthMiddleware)
 
 	// Проверка на мастера
 	e.GET("/master", func(c echo.Context) error {
-		if manager.MemberInfo.Master {
+		if manager.MemberInfo.Role == manager.MasterRole {
 			return c.JSON(http.StatusOK, manager.MemberInfo)
 		}
 		return c.JSON(http.StatusBadRequest, manager.MemberInfo)

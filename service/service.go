@@ -1,6 +1,8 @@
 package service
 
 import (
+	"cicd-service-go/manager"
+	"cicd-service-go/schedule"
 	"context"
 	"fmt"
 	"net/http"
@@ -17,14 +19,14 @@ import (
 
 func Start() {
 	echoInstance := runEchoServer()
-
 	runProfilingServer()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
 
-	//schedule.CloseCronChan <- true
+	schedule.CloseCronChan <- true
+	manager.CloseManagerChan <- true
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()

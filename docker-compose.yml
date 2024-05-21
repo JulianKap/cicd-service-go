@@ -1,13 +1,24 @@
 version: '3.9'
 
+networks:
+  default:
+    name: cicd-network
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.102.0.0/16
+
 volumes:
   etcd-data:
+  vault-data:
+  registry-data:
 
 services:
   cicd-service-01:
+    image: cicd-service-go:test
+    container_name: cicd-service-01
     build:
       dockerfile: ./Dockerfile.dind
-    container_name: cicd-service-01
     volumes:
       - ./configs/config-test.json:/app/config.json
       - /var/run/docker.sock:/var/run/docker.sock
@@ -36,3 +47,28 @@ services:
     ports:
       - 2379:2379
     restart: always
+
+  vault:
+    image: vault:1.13.3
+    container_name: vault
+    environment:
+      VAULT_ADDR: "http://0.0.0.0:8200"
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID}
+#      VAULT_SERVICE_TOKEN: ${VAULT_SERVICE_TOKEN}
+    ports:
+      - "8200:8200"
+    volumes:
+      - vault-data:/vault/data
+    cap_add:
+      - IPC_LOCK
+    restart: always
+
+  registry:
+    image: registry:2.8.3
+    container_name: registry
+    ports:
+      - "5000:5000"
+#    environment:
+#      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+    volumes:
+      - registry-data:/var/lib/registry

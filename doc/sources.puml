@@ -1,0 +1,96 @@
+@startuml
+namespace sources {
+    class Credentials << (S,Aquamarine) >> {
+        + Username string
+        + Password string
+        + Token string
+
+    }
+    class Job << (S,Aquamarine) >> {
+        + ID int
+        + IdProject int
+        + JobName string
+        + URL string
+        + Branch string
+        + Enable bool
+        + Creds Credentials
+
+    }
+    class JobResponse << (S,Aquamarine) >> {
+        + Job *Job
+        + Message string
+        + Error *string
+
+    }
+    class Jobs << (S,Aquamarine) >> {
+        + Jobs []Job
+
+    }
+    class JobsResponse << (S,Aquamarine) >> {
+        + Jobs *Jobs
+        + Message string
+        + Error *string
+
+    }
+    class KeysDCS << (S,Aquamarine) >> {
+        + Projects string
+        + LatestID string
+        + Project string
+        + Job string
+
+    }
+    class Project << (S,Aquamarine) >> {
+        + ID int
+        + APIKey string
+        + ProjectName string
+
+        - createProjectETCD(cli *v3.Client) error
+        - deleteProjectETCD(cli *v3.Client) (bool, string, error)
+        - getJobsETCD(cli *v3.Client, jobs *Jobs) error
+        - createJobETCD(cli *v3.Client, j *Job) error
+        - deleteJobETCD(cli *v3.Client, j *Job) (bool, error)
+
+        + GetJobETCD(cli *v3.Client, job *Job) (bool, error)
+
+    }
+    class ProjectFull << (S,Aquamarine) >> {
+        + ID int
+        + APIKey string
+        + ProjectName string
+        + Jobs Jobs
+
+    }
+    class ProjectResponse << (S,Aquamarine) >> {
+        + Project *Project
+        + Message string
+        + Error *string
+
+    }
+    class Projects << (S,Aquamarine) >> {
+        + Projects []Project
+
+    }
+    class ProjectsResponse << (S,Aquamarine) >> {
+        + Projects *Projects
+        + Message string
+        + Error *string
+
+    }
+    class Response << (S,Aquamarine) >> {
+        + Message string
+        + Error *string
+
+    }
+}
+
+
+"sources.Job" o-- "sources.Credentials"
+"sources.JobResponse" o-- "sources.Job"
+"sources.Jobs" o-- "sources.Job"
+"sources.JobsResponse" o-- "sources.Jobs"
+"sources.ProjectFull" o-- "sources.Jobs"
+"sources.ProjectResponse" o-- "sources.Project"
+"sources.Projects" o-- "sources.Project"
+"sources.ProjectsResponse" o-- "sources.Projects"
+
+@enduml

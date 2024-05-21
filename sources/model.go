@@ -1,37 +1,28 @@
 package sources
 
-// KeysDCS ключи в DCS
-type KeysDCS struct {
-	// Projects ключ проектов
-	Projects string `json:"projects"`
-	LatestID string `json:"latest_id"`
-	Project  string `json:"project"`
-	Job      string `json:"job"`
-}
-
 // Credentials креды для авторизации
 type Credentials struct {
 	// Username пользователь
-	Username string `json:"username"`
+	Username string `json:"username,omitempty"`
 	// Password пароль пользователя
-	Password string `json:"password"`
+	Password string `json:"-"`
 	// Token токен авторизации
-	Token string `json:"token,omitempty"`
+	Token string `json:"-"`
 }
 
 // Project представляет информацию о проекте
 type Project struct {
 	// ID уникальный id проекта
 	ID int `json:"id,omitempty"`
-	// APIKey токен для работы с проектом
-	APIKey string `json:"api_key,omitempty"`
 	// ProjectName название проекта
 	ProjectName string `json:"project_name"`
+	// Token токен авторизации для проекта
+	Token string `json:"token,omitempty"`
 }
 
 // Projects представляет список всех проектов
 type Projects struct {
-	Projects []Project `json:"projects"`
+	Projects []*Project `json:"projects"`
 }
 
 // Job представляет информацию о задаче
@@ -54,19 +45,19 @@ type Job struct {
 
 // Jobs представляет список всех задач проекта
 type Jobs struct {
-	Jobs []Job `json:"jobs"`
+	Jobs []*Job `json:"jobs"`
 }
 
-// ProjectFull представляет расширенную информацию о проекте
-type ProjectFull struct {
-	// ID уникальный id проекта
-	ID int `json:"id,omitempty"`
-	// APIKey токен для работы с проектом
-	APIKey string `json:"api_key,omitempty"`
-	// ProjectName название проекта
-	ProjectName string `json:"project_name"`
-	Jobs        Jobs   `json:"jobs,omitempty"`
-}
+//// ProjectFull представляет расширенную информацию о проекте
+//type ProjectFull struct {
+//	// ID уникальный id проекта
+//	ID int `json:"id,omitempty"`
+//	// APIKey токен для работы с проектом
+//	APIKey string `json:"api_key,omitempty"`
+//	// ProjectName название проекта
+//	ProjectName string `json:"project_name"`
+//	Jobs        Jobs   `json:"jobs,omitempty"`
+//}
 
 type Response struct {
 	Message string  `json:"message"`
@@ -80,9 +71,9 @@ type ProjectResponse struct {
 }
 
 type ProjectsResponse struct {
-	Projects *Projects `json:"projects"`
-	Message  string    `json:"message,omitempty"`
-	Error    *string   `json:"error,omitempty"`
+	Projects []*Project `json:"projects"`
+	Message  string     `json:"message,omitempty"`
+	Error    *string    `json:"error,omitempty"`
 }
 
 type JobResponse struct {
@@ -92,7 +83,7 @@ type JobResponse struct {
 }
 
 type JobsResponse struct {
-	Jobs    *Jobs   `json:"jobs"`
+	Jobs    []*Job  `json:"jobs"`
 	Message string  `json:"message,omitempty"`
 	Error   *string `json:"error,omitempty"`
 }

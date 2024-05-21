@@ -7,10 +7,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// initializeCluster инициализация кластера
-func (c *Config) initializeCluster() error {
-	return nil
-}
+//// initializeCluster инициализация кластера
+//func (c *Config) initializeCluster() error {
+//	return nil
+//}
 
 // applyConfigurations проверка конфигурации в DCS
 // Если конфигурация отсутсвует, то добавляем ее
@@ -90,8 +90,8 @@ func (c *ClusterConfig) setWorker(m *Member) error {
 	return nil
 }
 
-// updateMembers добавление инстанса в список кластера.
-// Также удаление старых инстансов, у которых просрочен ttl
+// updateMembers добавление новой реплики в список кластера.
+// Также удаление старых реплики, у которых просрочен ttl
 func (c *ClusterConfig) updateMembers(m *Member) error {
 	res, err := GetMembers()
 	if err != nil {
@@ -102,9 +102,11 @@ func (c *ClusterConfig) updateMembers(m *Member) error {
 	newMembers := Members{}
 	newMembers.Members = append(newMembers.Members, *m)
 
+	delMembers := Members{}
+
 	if res != nil {
 		if len(res.Members) > 0 {
-			if m.Master {
+			if m.Role == MasterRole {
 				for _, mbr := range res.Members {
 					if mbr.UUID != m.UUID {
 						keyWorker := Keys.Workers + "/" + mbr.UUID
@@ -116,8 +118,9 @@ func (c *ClusterConfig) updateMembers(m *Member) error {
 						}
 
 						if validate {
-							newMembers.Members = append(newMembers.Members, mbr)
-							// todo: как вариант, нужно будет удалять вручную ключи воркеров
+							newMembers.Members = append(newMembers.Members, mbr) // Актуальные члены члены кластера
+						} else {
+							delMembers.Members = append(delMembers.Members, mbr) // Не актуальные
 						}
 					}
 				}
@@ -135,6 +138,12 @@ func (c *ClusterConfig) updateMembers(m *Member) error {
 		log.Error("updateMembers #3: ", err)
 		return err
 	}
+
+	//todo:сделать реестр старых членов кластера с лимитом на кол-во элементов
+	//if err := delMembers.delMembersETCD(db.InstanceETCD); err != nil {
+	//	log.Error("updateMembers #4: ", err)
+	//	return err
+	//}
 
 	return nil
 }

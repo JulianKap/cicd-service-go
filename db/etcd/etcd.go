@@ -2,6 +2,7 @@ package etcd
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -62,7 +63,7 @@ func IsTTLValid(cli *clientv3.Client, key string) (bool, error) {
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 {
-		log.Info("IsTTLValid #1: key ", key, " not found")
+		log.Debug("IsTTLValid #1: key ", key, " not found")
 		return false, nil
 	}
 
@@ -104,6 +105,34 @@ func GetKey(cli *clientv3.Client, key string) (*clientv3.GetResponse, error) {
 	return resp, nil
 }
 
+// GetKeyInt получить ключ в формате int (если можно преобразовать)
+func GetKeyInt(cli *clientv3.Client, key string) (int, error) {
+	id := -1
+
+	resp, err := GetKey(cli, key)
+	if err != nil {
+		log.Error("GetKeyInt #0: ", err)
+		return id, err
+	}
+
+	// Проверка наличия ключа
+	if len(resp.Kvs) == 0 { // Ключ не найден
+		log.Debug("GetKeyInt #1: key ", key, " not found")
+		return id, nil
+	} else if len(resp.Kvs) > 1 { // Больше одного ключа
+		log.Warning("GetKeyInt #2: key ", key, " get more than one key")
+	}
+
+	value := string(resp.Kvs[0].Value)
+	id, err = strconv.Atoi(value)
+	if err != nil {
+		log.Error("GetKeyInt #3: ", err)
+		return id, err
+	}
+
+	return id, nil
+}
+
 // DelKey удалить ключ из etcd
 func DelKey(cli *clientv3.Client, key string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -111,6 +140,19 @@ func DelKey(cli *clientv3.Client, key string) error {
 
 	if _, err := cli.Delete(ctx, key); err != nil {
 		log.Error("DelKey #0: ", err)
+		return err
+	}
+
+	return nil
+}
+
+// DelKeyRecursive удалить ключ из etcd и все его зависимости
+func DelKeyRecursive(cli *clientv3.Client, key string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if _, err := cli.Delete(ctx, key, clientv3.WithPrefix()); err != nil {
+		log.Error("DelKeyRecursive #0: ", err)
 		return err
 	}
 

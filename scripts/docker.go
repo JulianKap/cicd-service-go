@@ -33,7 +33,7 @@ func (rw *rewriter) watch() {
 }
 
 func (rw *rewriter) writeToOutput(line string) {
-	fmt.Printf("%s[%s]%s %s", rw.prefix, line)
+	fmt.Printf("%s %s", rw.prefix, line)
 }
 
 func (rw *rewriter) rewriteInput() <-chan error {

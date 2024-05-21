@@ -82,7 +82,7 @@ func getMasterETCD(cli *clientv3.Client) (*Master, error) {
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 { // Ключ не найден
-		log.Info("getMasterETCD #1: key ", Keys.Master, " not found")
+		log.Debug("getMasterETCD #1: key ", Keys.Master, " not found")
 		return nil, nil
 	} else if len(resp.Kvs) > 1 { // Больше одного ключа
 		log.Warning("getMasterETCD #2: key ", Keys.Master, " get more than one key")
@@ -106,7 +106,7 @@ func getMembersETCD(cli *clientv3.Client, key string) (*Members, error) {
 
 	// Проверка наличия ключа
 	if len(resp.Kvs) == 0 { // Ключ не найден
-		log.Info("getMembersETCD #1: key ", key, " not found")
+		log.Debug("getMembersETCD #1: key ", key, " not found")
 		return nil, nil
 	} else if len(resp.Kvs) > 1 { // Больше одного ключа
 		log.Warning("getMembersETCD #2: key ", key, " get more than one key")
@@ -123,9 +123,22 @@ func getMembersETCD(cli *clientv3.Client, key string) (*Members, error) {
 
 // delMemberETCD удалить члена кластера в etcd
 func (m *Member) delMemberETCD(cli *clientv3.Client, key string) error {
-	if err := etcd.DelKey(cli, key); err != nil {
+	if err := etcd.DelKeyRecursive(cli, key); err != nil {
 		log.Error("delMemberETCD #0: ", err)
 		return err
+	}
+
+	return nil
+}
+
+// delMembersETCD удаление членов кластера в etcd
+func (m *Members) delMembersETCD(cli *clientv3.Client) error {
+	for _, mbr := range m.Members {
+		key := Keys.Workers + "/" + mbr.UUID + "/"
+		if err := mbr.delMemberETCD(cli, key); err != nil {
+			log.Error("delMembersETCD #0: ", err)
+			return err
+		}
 	}
 
 	return nil

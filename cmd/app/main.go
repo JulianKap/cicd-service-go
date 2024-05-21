@@ -2,6 +2,7 @@ package main
 
 import (
 	"cicd-service-go/init/db"
+	"cicd-service-go/init/secrets"
 	"cicd-service-go/manager"
 	"cicd-service-go/schedule"
 	"cicd-service-go/service"
@@ -15,10 +16,10 @@ func init() {
 	if err := os.Setenv("TZ", "UTC"); err != nil {
 		return
 	}
-
-	utility.InitConfig()      // инициалищация конфигурации
-	utility.ConfigureLogger() // инициализация логирования
-	db.InitInstanceETCD()     // инициализация etcd
+	utility.InitConfig()
+	utility.ConfigureLogger()
+	db.InitInstanceETCD()
+	secrets.InitInstanceVault()
 	manager.InitManager()
 }
 

@@ -1,10 +1,11 @@
 package sources
 
 import (
-	"cicd-service-go/constants"
 	"cicd-service-go/init/db"
+	"cicd-service-go/init/secrets"
 	"cicd-service-go/manager"
 	"cicd-service-go/utility"
+	"cicd-service-go/vault"
 	"net/http"
 	"strconv"
 
@@ -12,26 +13,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var (
-	Keys KeysDCS
-)
-
-func InitHandler() {
-	Keys = KeysDCS{
-		Projects: manager.Conf.Cluster.Namespace + constants.PROJECTS_ALL,
-		LatestID: manager.Conf.Cluster.Namespace + constants.PROJECT_LATEST_ID,
-		Project:  manager.Conf.Cluster.Namespace + constants.PROJECTS + "/",
-	}
-}
-
 func HandleProjectCreate(ctx echo.Context) (err error) {
 	codeValPerm, respValPerm := ValidatePermission()
 	if codeValPerm != http.StatusOK {
 		return ctx.JSON(codeValPerm, respValPerm)
 	}
 
-	var project Project
-	if err := ctx.Bind(&project); err != nil {
+	var p Project
+	if err := ctx.Bind(&p); err != nil {
 		log.Error("HandleProjectCreate #0: ", err)
 		return ctx.JSON(http.StatusBadRequest, Response{
 			Message: "Error convert struct project",
@@ -39,7 +28,7 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 		})
 	}
 
-	if project.ProjectName == "" {
+	if p.ProjectName == "" {
 		log.Info("HandleProjectCreate #1: ", err)
 		return ctx.JSON(http.StatusBadRequest, Response{
 			Message: "Empty project name",
@@ -55,8 +44,8 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 		})
 	}
 
-	for _, p := range projects.Projects {
-		if project.ProjectName == p.ProjectName {
+	for _, project := range projects.Projects {
+		if p.ProjectName == project.ProjectName {
 			log.Info("HandleProjectCreate #3: project name already exists")
 			return ctx.JSON(http.StatusBadRequest, Response{
 				Message: "Project name already exists",
@@ -64,8 +53,8 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 		}
 	}
 
-	token, err := utility.GenerateToken(16)
-	if err != nil {
+	var t vault.Token
+	if err := p.createTokenProjectVault(secrets.InstanceVault, &t); err != nil {
 		log.Error("HandleProjectCreate #4: ", err)
 		return ctx.JSON(http.StatusInternalServerError, Response{
 			Message: "Error generate access token",
@@ -73,8 +62,7 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 		})
 	}
 
-	project.APIKey = token
-	if err = project.createProjectETCD(db.InstanceETCD); err != nil {
+	if err = p.createProjectETCD(db.InstanceETCD); err != nil {
 		log.Error("HandleProjectCreate #5: ", err)
 		return ctx.JSON(http.StatusBadRequest, Response{
 			Message: "Error create project",
@@ -82,9 +70,10 @@ func HandleProjectCreate(ctx echo.Context) (err error) {
 		})
 	}
 
+	p.Token = t.Token
 	return ctx.JSON(http.StatusOK, ProjectResponse{
 		Message: "Project created",
-		Project: &project,
+		Project: &p,
 	})
 }
 
@@ -104,8 +93,17 @@ func HandleProjectsGetList(ctx echo.Context) (err error) {
 		})
 	}
 
+	for _, p := range projects.Projects {
+		var t vault.Token
+		t.Path = GetProjectPathToken(p)
+		if err := vault.GetToken(secrets.InstanceVault, &t); err != nil {
+			log.Error("HandleProjectsGetList #1: ", err)
+		}
+		p.Token = t.Token
+	}
+
 	return ctx.JSON(http.StatusOK, ProjectsResponse{
-		Projects: &projects,
+		Projects: projects.Projects,
 	})
 }
 
@@ -116,7 +114,7 @@ func HandleProjectGetByID(ctx echo.Context) (err error) {
 		return ctx.JSON(codeValPerm, respValPerm)
 	}
 
-	projectID, err := strconv.Atoi(ctx.Param("id"))
+	projectID, err := strconv.Atoi(ctx.Param("id_project"))
 	if err != nil {
 		log.Error("HandleProjectGetByID #0: ", err)
 		return ctx.JSON(http.StatusBadRequest, ProjectResponse{
@@ -125,10 +123,10 @@ func HandleProjectGetByID(ctx echo.Context) (err error) {
 		})
 	}
 
-	project := Project{
+	p := Project{
 		ID: projectID,
 	}
-	state, err := getProjectETCD(db.InstanceETCD, &project)
+	state, err := getProjectETCD(db.InstanceETCD, &p)
 	if err != nil {
 		log.Error("HandleProjectGetByID #1: ", err)
 		return ctx.JSON(http.StatusInternalServerError, ProjectResponse{
@@ -137,12 +135,22 @@ func HandleProjectGetByID(ctx echo.Context) (err error) {
 		})
 	}
 
+	var t vault.Token
+	t.Path = GetProjectPathToken(&p)
+	if err := vault.GetToken(secrets.InstanceVault, &t); err != nil {
+		log.Error("HandleProjectGetByID #2: ", err)
+		return ctx.JSON(http.StatusInternalServerError, Response{
+			Message: "Not found token for project " + p.ProjectName,
+		})
+	}
+
+	p.Token = t.Token
 	if state {
 		return ctx.JSON(http.StatusOK, ProjectResponse{
-			Project: &project,
+			Project: &p,
 		})
 	} else {
-		log.Info("HandleProjectGetByID #2: not found project")
+		log.Info("HandleProjectGetByID #3: not found project")
 		return ctx.JSON(http.StatusBadRequest, Response{
 			Message: "Not found project",
 		})
@@ -156,7 +164,7 @@ func HandleProjectDeleteByID(ctx echo.Context) (err error) {
 		return ctx.JSON(codeValPerm, respValPerm)
 	}
 
-	projectID, err := strconv.Atoi(ctx.Param("id"))
+	projectID, err := strconv.Atoi(ctx.Param("id_project"))
 	if err != nil {
 		log.Error("HandleProjectDeleteByID #0: ", err)
 		return ctx.JSON(http.StatusBadRequest, ProjectResponse{
@@ -252,7 +260,7 @@ func HandleJobsGetList(ctx echo.Context) (err error) {
 	}
 
 	var project Project
-	codeValPrj, respValPrj := ValidateProjectById(ctx, &project, "id")
+	codeValPrj, respValPrj := ValidateProjectById(ctx, &project, "id_project")
 	if codeValPrj != http.StatusOK {
 		return ctx.JSON(codeValPrj, respValPrj)
 	}
@@ -267,7 +275,7 @@ func HandleJobsGetList(ctx echo.Context) (err error) {
 	}
 
 	return ctx.JSON(http.StatusOK, JobsResponse{
-		Jobs: &jobs,
+		Jobs: jobs.Jobs,
 	})
 }
 
@@ -363,7 +371,7 @@ func HandleJobDeleteByID(ctx echo.Context) (err error) {
 // ValidatePermission валидация доступных прав для данного запущенного экземпляра сервиса
 func ValidatePermission() (int, Response) {
 	// Если мы не мастер, то отклоняем данный запрос
-	if !manager.MemberInfo.Master {
+	if manager.MemberInfo.Role != manager.MasterRole {
 		log.Info("validatePermission #0: not master")
 		return http.StatusMethodNotAllowed, Response{Message: "I am SLAVE! Slave not support management projects and jobs"}
 	}

@@ -9,37 +9,37 @@ import (
 )
 
 // tasksScheduler планирование всех заданий мастером
-func tasksScheduler() (standalone bool, err error) {
-	standalone = false
+func tasksScheduler() (bool, error) {
+	standalone := false
 
 	// Получаем список всех тасок
 	var tasks taskpkg.Tasks
-	if err := getTasksETCD(db.InstanceETCD, &tasks); err != nil {
+	if err := taskpkg.GetTasksETCD(db.InstanceETCD, &tasks); err != nil {
 		log.Error("tasksScheduler #0: ", err)
-		return standalone, err
+		return false, err
 	}
 
 	if len(tasks.Tasks) == 0 {
 		log.Debug("tasksScheduler #1: not found tasks")
-		return standalone, nil
+		return false, nil
 	}
 
 	// Получаем список всех членов кластера
 	members, err := manager.GetMembers()
 	if err != nil {
 		log.Error("tasksScheduler #2: ", err)
-		return standalone, err
+		return false, err
 	}
 
 	workers := manager.Members{}
 
 	if len(members.Members) == 0 {
 		log.Warn("tasksScheduler #3: not found members")
-		return standalone, nil
+		return false, nil
 	} else if len(members.Members) == 1 {
 		if members.Members[0].UUID != manager.MemberInfo.UUID {
 			log.Warn("tasksScheduler #4: one member in the cluster and is not me")
-			return standalone, nil
+			return false, nil
 		}
 		standalone = true
 
@@ -56,28 +56,15 @@ func tasksScheduler() (standalone bool, err error) {
 	taskInHistory := false // отправить задание в историю
 	tasksInQueue := taskpkg.Tasks{}
 	for _, t := range tasks.Tasks {
-		//if t.Status.Status == taskpkg.Completed {
-		//	taskInHistory = true
-		//} else if t.Status.Status == taskpkg.Failed {
-		//	// Лимит попыток исчерпан. Переводим задачу в список истории
-		//	if t.NumberOfRetriesOnError > t.Status.RetryCount {
-		//		taskInHistory = false
-		//	} else {
-		//		taskInHistory = true
-		//	}
-		//} else
+		mbr := manager.Member{UUID: t.Status.WorkerUUID}
 
-		if t.Status.Status == taskpkg.Schedule {
-			// Проверить статус выполнения
-			// todo: проверить, что задача действительно выполняется, если же нет, то нужно либо добавить в очередь выполнения
-			// либо перевести в историю. Данный пункт нужно особенно тщательно протестировать.
-			// К примеру добавить дедлайн на выполнения, и если превышение, то отменяем задачу.
+		if t.Status.Status == taskpkg.Removing {
+			taskInHistory = true
+		} else if t.Status.Status == taskpkg.Schedule {
+			// Задание распределено, поэтому проверяем статус выполнения
 
-			m := manager.Member{
-				UUID: t.Status.WorkerUUID,
-			}
-
-			if err := getTaskForWorker(db.InstanceETCD, m, &t); err != nil {
+			// Получаем статус задания у самого воркера и решаем что дальше делания с заданием
+			if err := getTaskForWorker(db.InstanceETCD, mbr, t); err != nil {
 				log.Error("tasksScheduler #6: ", err)
 			}
 
@@ -97,31 +84,39 @@ func tasksScheduler() (standalone bool, err error) {
 					taskInHistory = false
 
 					if okWorker {
-						continue
+						continue // Не трогаем задание
 					}
 				} else {
 					taskInHistory = true
 				}
-			} else if t.Status.Status == taskpkg.Pending || t.Status.Status == taskpkg.Running {
+			} else if t.Status.Status == taskpkg.Pending {
 				if okWorker {
 					continue
 				}
+			} else if t.Status.Status == taskpkg.Running {
+				if okWorker {
+					// todo: добавить дедлайн на выполнение задания, и если превышение, то отменяем задание.
+					continue // Не трогаем задание
+				}
+
+				taskInHistory = true
 			}
 		} else if t.Status.Status == taskpkg.Pending {
 			taskInHistory = false
 		}
 
 		if taskInHistory {
-			if err := setTaskInHistory(t); err != nil {
+			if err := setTaskInHistory(*t); err != nil {
 				log.Error("tasksScheduler #7: ", err)
 			}
 
-			// Удаляем задание из осовного списка
-			p := sources.Project{
-				ID: t.ProjectID,
-			}
-			if _, err := deleteTaskByProjectETCD(db.InstanceETCD, &p, &t); err != nil {
+			// Удаляем задание
+			if err := delTaskByProjectETCD(db.InstanceETCD, &mbr, &sources.Project{ID: t.ProjectID}, t); err != nil {
 				log.Error("tasksScheduler #8: ", err)
+			}
+
+			if t.Status.Status == taskpkg.Removing && t.Status.WorkerUUID != "" {
+				// todo: Ключ для прерывания выполнения заданий на воркере. Чтоб успеть отменить еще незапущенные задания
 			}
 		} else {
 			tasksInQueue.Tasks = append(tasksInQueue.Tasks, t)
@@ -134,53 +129,51 @@ func tasksScheduler() (standalone bool, err error) {
 	}
 
 	if standalone { // Вариант, когда в кластере только один член, и это мастер
-		for j, t := range tasksInQueue.Tasks {
-			// Отмечаем uuid воркера, на который распределено задание
-			t.Status.WorkerUUID = manager.MemberInfo.UUID
-			tasksInQueue.Tasks[j].Status.WorkerUUID = manager.MemberInfo.UUID
-			tasksInQueue.Tasks[j].Status.Status = taskpkg.Schedule
+		for _, t := range tasksInQueue.Tasks {
+			t.Status.WorkerUUID = manager.MemberInfo.UUID // отмечаем uuid воркера, на который распределено задание
+			t.Status.Status = taskpkg.Pending             // для воркера отмечаем статус в ожидании
 
-			ok, err := setTaskForWorker(db.InstanceETCD, manager.MemberInfo, &t)
+			ok, err := setTaskForWorker(db.InstanceETCD, manager.MemberInfo, t)
 			if err != nil {
 				log.Error("tasksScheduler #10: ", err)
 			}
 
-			if !ok {
-				// todo: как вариат, отмечать или просто пропускать такие таски
+			if ok {
+				t.Status.Status = taskpkg.Schedule // для общего списка, что задание было распределено наа воркер
+			} else {
+				t.Status.WorkerUUID = ""
 			}
 		}
 	} else { // Когда есть другие воркеры
 		// Распределяем задачи по воркерам
-		for j, t := range tasksInQueue.Tasks {
+		for _, t := range tasksInQueue.Tasks {
 			m, err := GetMemberWithMinTasks(workers)
 			if err != nil {
 				log.Error("tasksScheduler #11: ", err)
 			}
 
-			// Отмечаем uuid воркера, на который распределено задание
-			t.Status.WorkerUUID = m.UUID
-			tasksInQueue.Tasks[j].Status.WorkerUUID = m.UUID
-			tasksInQueue.Tasks[j].Status.Status = taskpkg.Schedule
+			t.Status.WorkerUUID = m.UUID      // отмечаем uuid воркера, на который распределено задание
+			t.Status.Status = taskpkg.Pending // для воркера отмечаем статус в ожидании
 
-			ok, err := setTaskForWorker(db.InstanceETCD, *m, &t)
+			ok, err := setTaskForWorker(db.InstanceETCD, *m, t)
 			if err != nil {
 				log.Error("tasksScheduler #12: ", err)
 			}
 
-			if !ok {
-				// todo: распределить данную таску на другого воркера
+			if ok {
+				t.Status.Status = taskpkg.Schedule // для общего списка, что задание было распределено наа воркер
+			} else {
+				t.Status.WorkerUUID = ""
 			}
 		}
 	}
 
 	// Обновление списка заданий по всем проектам
 	if err = updateAllTasks(db.InstanceETCD, &tasksInQueue); err != nil {
-		log.Error("tasksScheduler #12: ", err)
+		log.Error("tasksScheduler #13: ", err)
 	}
 
-	// todo: сделать удаление старых тасок в /projects/:id/tasks
-
-	return true, err
+	return true, nil
 }
 
 // setTaskInHistory перенос задания в список истории
@@ -192,42 +185,37 @@ func setTaskInHistory(task taskpkg.Task) error {
 }
 
 // tasksSchedulerWorker планирование заданий воркером
-func tasksSchedulerWorker() (err error, t taskpkg.Tasks) {
+func tasksSchedulerWorker() (taskpkg.Tasks, error) {
 	var tasksInQueue taskpkg.Tasks
 
 	// Получаем список своих задач
 	var tasks taskpkg.Tasks
 	if err := getTasksForWorker(db.InstanceETCD, manager.MemberInfo, &tasks); err != nil {
-		log.Error("runTasksWorker #0: ", err)
-		return err, tasksInQueue
+		log.Error("tasksSchedulerWorker #0: ", err)
+		return tasksInQueue, err
 	}
 
 	if len(tasks.Tasks) == 0 {
-		log.Debug("runTasksWorker #1: not found tasks")
-		return nil, tasksInQueue
+		log.Debug("tasksSchedulerWorker #1: not found tasks")
+		return tasksInQueue, nil
 	}
 
 	for _, t := range tasks.Tasks {
 		if t.Status.Status == taskpkg.Failed {
 			if t.NumberOfRetriesOnError > t.Status.RetryCount {
 				tasksInQueue.Tasks = append(tasksInQueue.Tasks, t)
-				//continue
 			}
 		} else if t.Status.Status == taskpkg.Running {
 			// Проверить статус выполнения
-			// todo: проверить, что задача действительно выполняется, если же нет, то нужно либо добавить в очередь выполнения
-			// либо перевести в историю. Данный пункт нужно особенно тщательно протестировать.
-			// К примеру добавить дедлайн на выполнения, и если превышение, то отменяем задачу.
+			// todo: СДЕЛАТЬ ПРОВЕРКУ ДЕДЛАЙНА И ВСЕ НА ЭТОМ
 
-			// СДЕЛАТЬ ПРОВЕРКУ ДЕДЛАЙНА И ВСЕ НА ЭТОМ
-
-			log.Info("runTasksWorker #2: task in Running state (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
+			log.Info("tasksSchedulerWorker #2: task in Running state (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
 		} else if t.Status.Status == taskpkg.Pending {
 			tasksInQueue.Tasks = append(tasksInQueue.Tasks, t)
 		}
 	}
 
-	return err, tasksInQueue
+	return tasksInQueue, nil
 }
 
 // GetMemberWithMinTasks получение члена кластера с минимальным количеством заданий

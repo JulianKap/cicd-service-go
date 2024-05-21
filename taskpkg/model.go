@@ -4,18 +4,6 @@ import (
 	"time"
 )
 
-// KeysDCS ключи в DCS
-type KeysDCS struct {
-	// Tasks все таски
-	Tasks string `json:"tasks"`
-	// TasksHistory история выполнения тасок
-	TasksHistory string `json:"tasks_history"`
-	// TaskProject таски конкретного проекта
-	TaskProject string `json:"task_project"`
-	// TaskLatestId крайний id таски
-	TaskLatestId string `json:"task_latest_id"`
-}
-
 // TaskStatus представляет статус выполнения задания
 type TaskStatus int
 
@@ -25,6 +13,7 @@ const (
 	Completed                   // Задание завершена успешно
 	Failed                      // Задание завершена с ошибкой
 	Schedule                    // Задание распределено, но еще не запускалось
+	Removing                    // Задание, которое нужно удалить
 )
 
 // TaskResult содержит результат выполнения задания
@@ -47,7 +36,7 @@ type Task struct {
 	ID int `json:"id"`
 	// ProjectID идентификатор проекта, к которому относится таска
 	ProjectID int `json:"project_id"`
-	// JobID идентификатор задания, к которое запускает таска
+	// JobID идентификатор задания, которое запускает таска
 	JobID int `json:"job_id"`
 	// Name название таски
 	Name string `json:"name,omitempty"`
@@ -61,7 +50,7 @@ type Task struct {
 
 // Tasks список тасок
 type Tasks struct {
-	Tasks []Task `json:"tasks"`
+	Tasks []*Task `json:"tasks"`
 }
 
 type TaskResponse struct {
@@ -71,29 +60,7 @@ type TaskResponse struct {
 }
 
 type TasksResponse struct {
-	Tasks   *Tasks  `json:"tasks"`
+	Tasks   []*Task `json:"tasks"`
 	Message string  `json:"message,omitempty"`
 	Error   *string `json:"error,omitempty"`
 }
-
-//
-//type ITask interface {
-//	GetActive() error
-//	IsZeroID() bool
-//	SetStatus(string)
-//	Save() error
-//	Finish() error
-//	GetJSON() ([]byte, error)
-//}
-//
-//type TaskWorker struct {
-//	TaskType    string
-//	TaskName    string
-//	Running     bool
-//	controlChan chan int `json:"-"`
-//
-//	//hub         worker.IWorkerHub
-//	CurrentTask *Task
-//
-//	cancel context.CancelFunc
-//}

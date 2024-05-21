@@ -14,7 +14,12 @@
             "endpoints" : [
                 "http://127.0.0.1:2379"
             ],
-            "dialTimeout": "5"
+            "timeout_s": "5"
+        },
+        "vault": {
+            "addr": "http://127.0.0.1:8200",
+            "token": "token",
+            "timeout_s": "60"
         }
     },
     "logging": {

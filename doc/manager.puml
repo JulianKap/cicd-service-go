@@ -1,0 +1,72 @@
+@startuml
+namespace manager {
+    class ClusterConfig << (S,Aquamarine) >> {
+        + Namespace string
+        + TTL int
+        + LoopWait uint
+        + RetryTimeout uint
+
+        - checkMaster(m *Member) (MasterState, error)
+        - setMaster(m *Member) error
+        - setWorker(m *Member) error
+        - updateMembers(m *Member) error
+
+    }
+    class Config << (S,Aquamarine) >> {
+        + Cluster ClusterConfig
+
+        - setConfigETCD(cli *v3.Client) error
+        - initializeCluster() error
+        - applyConfigurations() error
+
+    }
+    class KeysDCS << (S,Aquamarine) >> {
+        + Config string
+        + Master string
+        + Workers string
+        + Members string
+        + Worker string
+
+    }
+    class Master << (S,Aquamarine) >> {
+        + UUID string
+        + TTL int
+
+        - setMasterETCD(cli *v3.Client) error
+
+    }
+    class MasterState << (S,Aquamarine) >> {
+        + Exists bool
+        + IAmMaster bool
+        + Unknown bool
+
+    }
+    class Member << (S,Aquamarine) >> {
+        + UUID string
+        + Master bool
+        + ReadOnly bool
+
+        - delMemberETCD(cli *v3.Client, key string) error
+
+    }
+    class Members << (S,Aquamarine) >> {
+        + Members []Member
+
+        - setMembersETCD(cli *v3.Client) error
+
+    }
+    class Worker << (S,Aquamarine) >> {
+        + UUID string
+        + TTL int
+        + Running bool
+
+        - setWorkerETCD(cli *v3.Client) error
+
+    }
+}
+
+
+"manager.Config" o-- "manager.ClusterConfig"
+"manager.Members" o-- "manager.Member"
+
+@enduml
