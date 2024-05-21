@@ -1,6 +1,7 @@
 High-Aviability cicd-service-go
 ===
-[![Go](https://github.com/JulianKap/cicd-service-go/actions/workflows/go.yml/badge.svg)](https://github.com/JulianKap/cicd-service-go/actions/workflows/go.yml)
+[![Go-build](https://github.com/JulianKap/cicd-service-go/actions/workflows/go.yml/badge.svg)](https://github.com/JulianKap/cicd-service-go/actions/workflows/go.yml)
+[![Go-tests](https://github.com/JulianKap/cicd-service-go/actions/workflows/go-test.yml/badge.svg)](https://github.com/JulianKap/cicd-service-go/actions/workflows/go-test.yml)
 
 Сервис высокой доступности для построения CI/CD конвейера.
 
