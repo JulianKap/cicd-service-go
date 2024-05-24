@@ -1,0 +1,100 @@
+@startuml
+package "cicd-service-go" {
+'    package "Main" {
+        class Main
+'    }
+
+'    package "Scheduler" {
+        class Scheduler
+'    }
+
+'    package "Manager" {
+        class Manager
+'    }
+
+package Service{
+annotation service {
+
+
+-startFramework(): *Echo
+-initRoutes(e *Echo)
++Start()
+-runEchoServer(): *Echo
+-runProfilingServer()
+}
+}
+
+'    package "Worker" {
+        class Worker
+'    }
+
+'    package "Taskpkg" {
+        class Taskpkg
+'    }
+
+'    package "Pipeline" {
+        class Pipeline
+'    }
+
+'    package "Scripts" {
+        class Scripts
+'    }
+
+'    package "Sources" {
+        class Sources
+'    }
+
+'    package "Etcd" {
+        class Etcd
+'    }
+
+'    package "Vault" {
+        class Vault
+'    }
+
+'    package "Logs" {
+        class Logs
+'    }
+
+'    package "Config" {
+        class Config
+'    }
+
+    Main --> Scheduler
+    Main --> Manager
+    Main --> Service
+    Main --> Logs
+    Main --> Vault
+    Main --> Etcd
+
+    Etcd --> Config
+    Etcd --> Logs
+
+    Vault --> Config
+    Vault --> Logs
+
+    Manager --> Etcd
+    Manager --> Logs
+    Manager --> Config
+
+    Scheduler --> Worker
+    Scheduler --> Taskpkg
+    Scheduler --> Manager
+    Scheduler --> Etcd
+    Scheduler --> Logs
+
+    Service --> Sources
+    Service --> Taskpkg
+    Service --> Manager
+    Service --> Logs
+    Service --> Vault
+
+    Worker --> Sources
+    Worker --> Taskpkg
+    Worker --> Pipeline
+    Worker --> Scripts
+    Worker --> Etcd
+    Worker --> Logs
+}
+
+@enduml
