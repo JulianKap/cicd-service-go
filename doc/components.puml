@@ -1,0 +1,87 @@
+@startuml
+
+database "Version Control System" {
+    [GitHub, GitLab, Bitbucket] as VCS
+}
+
+database "Credential Store" {
+    [Vault]
+}
+
+database "Distributed Coordination Service" {
+    [Etcd1] .. [Etcd2]
+    [Etcd2] .. [Etcd3]
+    [Etcd3] .. [Etcd1]
+}
+
+package "Virtual IP" {
+    interface VIP
+
+    [Keepalived1] as KP1
+    [Keepalived2] as KP2
+    [Keepalived3] as KP3
+
+    VIP .. KP1 : VIP address assigned
+    VIP .. KP2 : VIP address assigned
+    VIP .. KP3 : VIP address assigned
+
+    KP1 .. KP2
+    KP2 .. KP3
+    KP1 .. KP3
+}
+
+package "Load Balancer" {
+    [Nginx, HAProxy] as LB
+}
+
+package "CI/CD Service" {
+    [Master]
+    [Worker1]
+    [Worker2]
+}
+
+actor User
+
+User --> VCS : Push commit in repository
+User --> [Vault] : Add credentials in vault
+User --> LB : Use API cicd-service-go
+
+VCS --> LB : Webhooks for commits or PR
+LB --> VIP : Direct traffic to VIP
+
+note left of VIP
+With the help of keepalived, the master is identified
+and a vip address is assigned to its host.
+end note
+
+VIP --> [Master] : Use master for API
+note right of [Master]
+All work with the API goes through the master.
+Other cluster members do not have such rights.
+end note
+
+KP1 -down-> [Master] : Check master
+KP2 -down-> [Worker1] : Check master
+KP3 -down-> [Worker2] : Check master
+
+[Master] -up-> [Vault] : Get or Add credentials
+[Worker1] -up-> [Vault] : Get credentials
+[Worker2] -up-> [Vault] : Get credentials
+
+'[Master] -up-> VCS : Pull repository
+[Worker1] -up-> VCS : Pull repository
+[Worker2] -up-> VCS : Pull repository
+
+[Master] -down-> [Etcd1] : Use storage
+[Worker1] -down-> [Etcd1] : Use storage
+[Worker2] -down-> [Etcd1] : Use storage
+
+[Master] -down-> [Etcd2] : Use storage
+[Worker1] -down-> [Etcd2] : Use storage
+[Worker2] -down-> [Etcd2] : Use storage
+
+[Master] -down-> [Etcd3] : Use storage
+[Worker1] -down-> [Etcd3] : Use storage
+[Worker2] -down-> [Etcd3] : Use storage
+
+@enduml

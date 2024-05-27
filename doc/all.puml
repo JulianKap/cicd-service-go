@@ -1,68 +1,39 @@
 @startuml
+
+database "Version Control System" {
+'    [GitHub, GitLab, Bitbucket] as VCS
+}
+
+database "Credential Store" {
+'    [Vault]
+}
+
+database "Distributed Coordination Service" {
+'    [Etcd1] .. [Etcd2]
+'    [Etcd2] .. [Etcd3]
+'    [Etcd3] .. [Etcd1]
+}
+
 package "cicd-service-go" {
-'    package "Main" {
-        class Main
-'    }
 
-'    package "Scheduler" {
-        class Scheduler
-'    }
+    class Main
 
-'    package "Manager" {
-        class Manager
-'    }
+    class Manager
 
-package Service{
-annotation service {
+    class Scheduler
 
-
--startFramework(): *Echo
--initRoutes(e *Echo)
-+Start()
--runEchoServer(): *Echo
--runProfilingServer()
-}
-}
-
-'    package "Worker" {
-        class Worker
-'    }
-
-'    package "Taskpkg" {
-        class Taskpkg
-'    }
-
-'    package "Pipeline" {
-        class Pipeline
-'    }
-
-'    package "Scripts" {
-        class Scripts
-'    }
-
-'    package "Sources" {
-        class Sources
-'    }
-
-'    package "Etcd" {
-        class Etcd
-'    }
-
-'    package "Vault" {
-        class Vault
-'    }
-
-'    package "Logs" {
-        class Logs
-'    }
-
-'    package "Config" {
-        class Config
-'    }
+    class Worker
+    class Taskpkg
+    class Pipeline
+    class Scripts
+    class Sources
+    class Etcd
+    class Vault
+    class Logs
+    class Config
 
     Main --> Scheduler
     Main --> Manager
-    Main --> Service
     Main --> Logs
     Main --> Vault
     Main --> Etcd
@@ -83,18 +54,18 @@ annotation service {
     Scheduler --> Etcd
     Scheduler --> Logs
 
-    Service --> Sources
-    Service --> Taskpkg
-    Service --> Manager
-    Service --> Logs
-    Service --> Vault
-
     Worker --> Sources
     Worker --> Taskpkg
     Worker --> Pipeline
     Worker --> Scripts
     Worker --> Etcd
     Worker --> Logs
+
+'    Worker --> [Other Dependencies]
+
 }
+
+
+
 
 @enduml
