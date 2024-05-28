@@ -19,14 +19,16 @@ pipeline:
       branch: dev
       commands:
         - docker build -t cicd-service-go:latest .
-
-    - name: Push docker image
-      image: docker:latest
-      branch: dev
-      commands:
         - docker tag cicd-service-go:latest registry:5000/cicd-service-go:latest
         - docker push registry:5000/cicd-service-go:latest
 
+#    - name: Push docker image
+#      image: docker:latest
+#      branch: dev
+#      commands:
+#        - docker tag registry:5000/cicd-service-go:latest test/cicd-service-go:latest
+#        - docker push registry:5000/cicd-service-go:latest
+#
 #    - name: Deploy
 #      image:
 #      branch: dev
