@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 )
 
@@ -69,6 +70,17 @@ func newRewriter(ctx context.Context, prefix string) io.Writer {
 	go w.watch()
 
 	return pw
+}
+
+// CheckImageExists проверка наличия docker образа, чтобы его не пулить
+func CheckImageExists(image string) (bool, error) {
+	cmd := exec.Command("docker", "images", "-q", image)
+	output, err := cmd.Output()
+	if err != nil {
+		log.Error("CheckImageExists #0: ", err)
+		return false, err
+	}
+	return strings.TrimSpace(string(output)) != "", nil
 }
 
 // PullImage получение docker образа

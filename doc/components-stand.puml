@@ -1,0 +1,39 @@
+@startuml
+
+top to bottom direction
+
+database "Version Control System" {
+    interface VCS_UI
+    interface VCS_API
+    VCS_API -- [GitHub, GitLab, Bitbucket]
+    VCS_UI -- [GitHub, GitLab, Bitbucket]
+}
+
+database "Credential Store" {
+    interface VAULT_API
+    VAULT_API -- [Vault]
+}
+
+database "Distributed Coordination Service" {
+    interface DCS_API
+    DCS_API -- [Etcd]
+}
+
+package "CI/CD Service" {
+    interface MASTER_API
+
+    MASTER_API -d- [Master_standalone]
+}
+
+actor User
+
+User ..> VCS_UI : Push commit in repository
+User ..> VAULT_API : Add credentials in vault
+User .d.> MASTER_API : Use API cicd-service-go
+[GitHub, GitLab, Bitbucket] ..> MASTER_API : Webhooks for commits or PR
+
+[Master_standalone] .r.> VAULT_API : Get or Add credentials
+[Master_standalone] .l.> VCS_API : Use for pull repository
+[Master_standalone] ..> DCS_API : Use storage
+
+@enduml

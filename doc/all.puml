@@ -1,5 +1,7 @@
 @startuml
 package "cicd-service-go" {
+    top to bottom direction
+
     class utility {
         +ConfigureLogger()
         +InitConfig()
@@ -20,7 +22,6 @@ package "cicd-service-go" {
         +InitInstanceVault()
         -initVault()
     }
-
 
     class etcd {
         +SetKey()
@@ -54,7 +55,6 @@ package "cicd-service-go" {
         +MasterState struct
         +Master struct
         +Worker struct
-
         +InitManager()
         +RunManager()
         - applyConfigurations()
@@ -156,36 +156,41 @@ package "cicd-service-go" {
         +RunCommandImage()
     }
 
-    main --> utility
+    main -u-> utility
     main --> db
     main --> secrets
     main --> manager
     main --> scheduler
     main --> service
 
-    db --> utility
-    etcd *-- db
+'    service -d-> vault
+    service --> sources
+    service --> taskpkg
 
-    secrets --> utility
-    vault *-- secrets
-
-    service ----> vault
-    service ---> sources
-    service ---> taskpkg
-
-    manager ---> etcd
-    manager ---> utility
+'    manager -d-> etcd
+'    manager -d-> utility
 
     scheduler --> worker
-    scheduler ---> taskpkg
-    scheduler ---> manager
-    scheduler ---> etcd
+    scheduler --> taskpkg
+'    scheduler -d-> manager
+'    scheduler -d->  etcd
 
-    worker --> sources
+
+'    db -d-> utility
+'    etcd *-- db
+    db --* etcd
+'
+'    secrets -d-> utility
+'    vault *-- secrets
+    secrets --* vault
+'
+'
+'
+'    worker --> sources
     worker --> taskpkg
     worker o--> pipeline
     worker o--> scripts
-    worker --> utility
+'    worker -d-> utility
 }
 
 @enduml

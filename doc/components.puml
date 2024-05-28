@@ -1,17 +1,28 @@
 @startuml
 
+top to bottom direction
+
 database "Version Control System" {
-    [GitHub, GitLab, Bitbucket] as VCS
+    interface VCS_UI
+    interface VCS_API
+    VCS_API -- [GitHub, GitLab, Bitbucket]
+    VCS_UI -- [GitHub, GitLab, Bitbucket]
 }
 
 database "Credential Store" {
-    [Vault]
+    interface VAULT_API
+    VAULT_API -- [Vault]
 }
 
 database "Distributed Coordination Service" {
-    [Etcd1] .. [Etcd2]
-    [Etcd2] .. [Etcd3]
-    [Etcd3] .. [Etcd1]
+    interface DCS_API
+    DCS_API -- [Etcd1]
+    DCS_API -- [Etcd2]
+    DCS_API -- [Etcd3]
+
+    [Etcd1] - [Etcd2]
+    [Etcd2] -- [Etcd3]
+    [Etcd3] -- [Etcd1]
 }
 
 package "Virtual IP" {
@@ -21,13 +32,13 @@ package "Virtual IP" {
     [Keepalived2] as KP2
     [Keepalived3] as KP3
 
-    VIP .. KP1 : VIP address assigned
-    VIP .. KP2 : VIP address assigned
-    VIP .. KP3 : VIP address assigned
+    VIP <-r- KP1
+    VIP <-r- KP2
+    VIP <-r- KP3
 
-    KP1 .. KP2
-    KP2 .. KP3
-    KP1 .. KP3
+    KP1 - KP2
+    KP2 -- KP3
+    KP1 -- KP3
 }
 
 package "Load Balancer" {
@@ -35,53 +46,64 @@ package "Load Balancer" {
 }
 
 package "CI/CD Service" {
-    [Master]
-    [Worker1]
-    [Worker2]
+    interface MASTER_API
+    interface WORKER1_API
+    interface WORKER2_API
+
+    MASTER_API -d- [Master]
+    WORKER1_API -d- [Worker1]
+    WORKER2_API -d- [Worker2]
 }
 
 actor User
 
-User --> VCS : Push commit in repository
-User --> [Vault] : Add credentials in vault
-User --> LB : Use API cicd-service-go
+User ..> VCS_UI : Push commit in repository
+User ..> VAULT_API : Add credentials in vault
+User ..> LB : Use API cicd-service-go
 
-VCS --> LB : Webhooks for commits or PR
-LB --> VIP : Direct traffic to VIP
+note right of VAULT_API
+Get or Add credentials
+end note
+
+[GitHub, GitLab, Bitbucket] ..> LB : Webhooks for commits or PR
+LB ..> VIP : Direct traffic to VIP
 
 note left of VIP
 With the help of keepalived, the master is identified
 and a vip address is assigned to its host.
 end note
 
-VIP --> [Master] : Use master for API
-note right of [Master]
+VIP ..> MASTER_API : Direct traffic to master CI/CD service
+
+note right of MASTER_API
 All work with the API goes through the master.
 Other cluster members do not have such rights.
 end note
 
-KP1 -down-> [Master] : Check master
-KP2 -down-> [Worker1] : Check master
-KP3 -down-> [Worker2] : Check master
 
-[Master] -up-> [Vault] : Get or Add credentials
-[Worker1] -up-> [Vault] : Get credentials
-[Worker2] -up-> [Vault] : Get credentials
+KP1 -d..> MASTER_API : Find master
+KP2 -d..> WORKER1_API : Find master
+KP3 -d..> WORKER2_API : Find master
 
-'[Master] -up-> VCS : Pull repository
-[Worker1] -up-> VCS : Pull repository
-[Worker2] -up-> VCS : Pull repository
+[Master] -u..> VAULT_API
+[Worker1] -u...> VAULT_API
+[Worker2] -u..> VAULT_API
 
-[Master] -down-> [Etcd1] : Use storage
-[Worker1] -down-> [Etcd1] : Use storage
-[Worker2] -down-> [Etcd1] : Use storage
+'[Master] -up-> VCS_API
+[Worker1] -u.> VCS_API
+[Worker2] -u.> VCS_API
 
-[Master] -down-> [Etcd2] : Use storage
-[Worker1] -down-> [Etcd2] : Use storage
-[Worker2] -down-> [Etcd2] : Use storage
+note left of VCS_API
+Use for pull repository
+end note
 
-[Master] -down-> [Etcd3] : Use storage
-[Worker1] -down-> [Etcd3] : Use storage
-[Worker2] -down-> [Etcd3] : Use storage
+[Master] ..> DCS_API : Use storage
+[Worker1] ..> DCS_API : Use storage
+[Worker2] ..> DCS_API : Use storage
+
+note right of DCS_API
+Use for connection
+Example connection string: Etcd1,Etcd2,Etcd3
+end note
 
 @enduml

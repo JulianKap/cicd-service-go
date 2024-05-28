@@ -20,7 +20,7 @@ pipeline:
   steps:
   - name: Build
     image: docker
-	branch: master
+    branch: master
     commands:
       - "docker build . -t myapp"
       - "docker push myapp"
@@ -28,8 +28,9 @@ pipeline:
 			expected: Pipeline{
 				Steps: []Step{
 					{
-						Name:  "Build",
-						Image: "docker",
+						Name:   "Build",
+						Image:  "docker",
+						Branch: "master",
 						Commands: []string{
 							"docker build . -t myapp",
 							"docker push myapp",

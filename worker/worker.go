@@ -19,7 +19,7 @@ func RunWorkerTask(j sources.Job, p pipeline.Pipeline, t taskpkg.Task) (err erro
 	var wg sync.WaitGroup
 
 	for _, s := range p.Steps {
-		log.Info("RunWorkerTask #1: run step=", s.Name, " (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
+		log.Info("Step: ", s.Name, " START (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
 
 		if s.Image == "" {
 			log.Warn("RunWorkerTask #2: not image in step=", s.Name, " (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
@@ -28,66 +28,49 @@ func RunWorkerTask(j sources.Job, p pipeline.Pipeline, t taskpkg.Task) (err erro
 
 			return errors.New("image is null")
 		} else {
-			if s.Branch == "" && j.Branch != "master" {
-				continue
-			}
-
 			if s.Branch != j.Branch {
+				log.Info("RunWorkerTask #3: null count steps in pipeline (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
 				continue
 			}
 
 			commands, err := taskpkg.PrepareStepCommand(j, s)
 			if err != nil {
-				log.Error("RunWorkerTask #3: ", err)
+				log.Error("RunWorkerTask #4: ", err)
 				return err
 			}
 
 			if commands == "" {
-				log.Warn("RunWorkerTask #4: command is null step=", s.Name, " (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
+				log.Warn("RunWorkerTask #5: command is null for step=", s.Name, " (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
 				return errors.New("commands is null")
 			}
 
-			// todo: проверить наличие образа, чтобы не пулить
-			//wg.Add(1)
-			if err := scripts.PullImage(&wg, s.Image); err != nil {
-				log.Error("RunWorkerTask #5: ", err)
-				return err
+			ok, err := scripts.CheckImageExists(s.Image)
+			if err != nil {
+				log.Error("RunWorkerTask #6: ", err)
+				//return err
 			}
-			//go scripts.PullImage(&wg, s.Image)
-			//wg.Wait()
+
+			if !ok {
+				// todo: проверить наличие образа, чтобы не пулить
+				//wg.Add(1)
+				if err := scripts.PullImage(&wg, s.Image); err != nil {
+					log.Error("RunWorkerTask #7: ", err)
+					return err
+				}
+				//wg.Wait()
+			}
 
 			//wg.Add(1)
 			if err := scripts.RunCommandImage(&wg, s.Image, commands); err != nil {
-				log.Error("RunWorkerTask #6: ", err)
+				log.Error("RunWorkerTask #8: ", err)
 				//continue
 				return err
 			}
-			//go scripts.RunCommandImage(&wg, s)
 			//wg.Wait()
 		}
-	}
 
-	// todo: Использовать патерн пайплайн
+		log.Info("Step: ", s.Name, " DONE (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
+	}
 
 	return nil
 }
-
-//
-//import "cicd-service-go/taskpkg"
-//
-//type IWorker interface {
-//	CheckTaskName(taskName string) error
-//	StartWork() (task taskpkg.ITask, isRunning bool, err error)
-//	StatusWork() (task taskpkg.ITask, isRunning bool, err error)
-//	SetOpts(scheduleID int, taskName string) error
-//}
-//
-//type IWorkerHub interface {
-//	GetWorker(workerName string) IWorker
-//	GetStatusRunningWork() (taskpkg.ITask, bool, error)
-//	GetRunningWorker() IWorker
-//	SetRunningWorker(IWorker)
-//	DelRunningWork()
-//	ChanLock()
-//	ChanUnlock()
-//}
