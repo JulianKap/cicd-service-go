@@ -20,6 +20,7 @@ pipeline:
   steps:
   - name: Build
     image: docker
+	branch: master
     commands:
       - "docker build . -t myapp"
       - "docker push myapp"

@@ -1,71 +1,191 @@
 @startuml
-
-database "Version Control System" {
-'    [GitHub, GitLab, Bitbucket] as VCS
-}
-
-database "Credential Store" {
-'    [Vault]
-}
-
-database "Distributed Coordination Service" {
-'    [Etcd1] .. [Etcd2]
-'    [Etcd2] .. [Etcd3]
-'    [Etcd3] .. [Etcd1]
-}
-
 package "cicd-service-go" {
+    class utility {
+        +ConfigureLogger()
+        +InitConfig()
+        +GenerateUUID()
+        +GenerateToken()
+        +GetHostIP()
+        +RemovePrefixAuthBearer()
+    }
 
-    class Main
+    class db {
+        +InstanceETCD *clientv3.Client
+        +InitInstanceETCD()
+        -initETCD()
+    }
 
-    class Manager
+    class secrets {
+        +InstanceVault *api.Client
+        +InitInstanceVault()
+        -initVault()
+    }
 
-    class Scheduler
 
-    class Worker
-    class Taskpkg
-    class Pipeline
-    class Scripts
-    class Sources
-    class Etcd
-    class Vault
-    class Logs
-    class Config
+    class etcd {
+        +SetKey()
+        +SetKeyTTL()
+        +IsTTLValid()
+        +GetKey()
+        +GetKeyInt()
+        +DelKey()
+        +DelKeyRecursive()
+    }
 
-    Main --> Scheduler
-    Main --> Manager
-    Main --> Logs
-    Main --> Vault
-    Main --> Etcd
+    class vault {
+        +Token struct
+        +SetToken()
+        +GetToken()
+        +DelToken()
+    }
 
-    Etcd --> Config
-    Etcd --> Logs
+    class main {
+        -init()
+        +main()
+    }
 
-    Vault --> Config
-    Vault --> Logs
+    class manager {
+        +KeysDCS struct
+        +ClusterConfig struct
+        +Config struct
+        +RoleStatus int
+        +Member struct
+        +Members struct
+        +MasterState struct
+        +Master struct
+        +Worker struct
 
-    Manager --> Etcd
-    Manager --> Logs
-    Manager --> Config
+        +InitManager()
+        +RunManager()
+        - applyConfigurations()
+        - checkMaster()
+        - setMaster()
+        - setWorker()
+        - updateMembers()
+'        - setConfigETCD()
+'        - setMasterETCD()
+'        - delMemberETCD()
+'        - setMembersETCD()
+'        - delMembersETCD()
+'        - setWorkerETCD()
+    }
 
-    Scheduler --> Worker
-    Scheduler --> Taskpkg
-    Scheduler --> Manager
-    Scheduler --> Etcd
-    Scheduler --> Logs
+    class service {
+        +Start()
+        -runEchoServer()
+        -runProfilingServer()
+        -startFramework()
+        -initRoutes()
+        -allProjectsAuthMiddleware()
+        -projectAuthMiddleware()
+    }
 
-    Worker --> Sources
-    Worker --> Taskpkg
-    Worker --> Pipeline
-    Worker --> Scripts
-    Worker --> Etcd
-    Worker --> Logs
+    class scheduler {
+        +RunCron()
+        +GetMemberWithMinTasks()
+        -runSchedule()
+        -runScheduleWorker()
+        -tasksScheduler()
+        -setTaskInHistory()
+        -tasksSchedulerWorker()
+    }
 
-'    Worker --> [Other Dependencies]
+    class sources {
+        +Credentials struct
+        +Project struct
+        +Projects struct
+        +Job struct
+        +Jobs struct
+        +HandleProjectCreate()
+        +HandleProjectsGetList()
+        +HandleProjectGetByID()
+        +HandleProjectDeleteByID()
+        +HandleJobCreate()
+        +HandleJobsGetList()
+        +HandleJobGetByID()
+        +HandleJobDeleteByID()
+        +ValidatePermission()
+        +ValidateProject()
+        +ValidateProjectById()
+        +ValidateJob()
+        +GetProjectPathToken()
+        + GetJobETCD()
+'        - createProjectETCD()
+'        - deleteProjectETCD()
+'        - getJobsETCD()
+'        - createJobETCD()
+'        - deleteJobETCD()
+        - createTokenProjectVault()
+    }
 
+    class taskpkg {
+        +TaskStatus int
+        +TaskResult struct
+        +Task struct
+        +Tasks struct
+        +TaskResponse struct
+        +TasksResponse struct
+        +PrepareStepCommand()
+        +HandleTaskCreate()
+        +HandleTasksGetList()
+        +HandleTaskGetByID()
+        +HandleTaskDeleteByID()
+'        - getTaskByProjectETCD()
+'        - setTaskByProjectETCD()
+'        - markerDelTaskByProjectETCD()
+'        - getTasksETCD()
+'        - setTasksETCD()
+'        - getTasksByProjectETCD()
+    }
+
+    class worker {
+        +RunWorkerTask()
+    }
+
+    class pipeline {
+        +Step struct
+        +Pipeline struct
+        +PipelineRawString struct
+        +GetPipeline()
+        -parsePipeline()
+        -getPipelineFromGit()
+    }
+
+    class scripts {
+        +PullImage()
+        +RunCommandImage()
+    }
+
+    main --> utility
+    main --> db
+    main --> secrets
+    main --> manager
+    main --> scheduler
+    main --> service
+
+    db --> utility
+    etcd *-- db
+
+    secrets --> utility
+    vault *-- secrets
+
+    service ----> vault
+    service ---> sources
+    service ---> taskpkg
+
+    manager ---> etcd
+    manager ---> utility
+
+    scheduler --> worker
+    scheduler ---> taskpkg
+    scheduler ---> manager
+    scheduler ---> etcd
+
+    worker --> sources
+    worker --> taskpkg
+    worker o--> pipeline
+    worker o--> scripts
+    worker --> utility
 }
-
-
-
 
 @enduml

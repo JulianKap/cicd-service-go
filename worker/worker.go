@@ -28,6 +28,14 @@ func RunWorkerTask(j sources.Job, p pipeline.Pipeline, t taskpkg.Task) (err erro
 
 			return errors.New("image is null")
 		} else {
+			if s.Branch == "" && j.Branch != "master" {
+				continue
+			}
+
+			if s.Branch != j.Branch {
+				continue
+			}
+
 			commands, err := taskpkg.PrepareStepCommand(j, s)
 			if err != nil {
 				log.Error("RunWorkerTask #3: ", err)

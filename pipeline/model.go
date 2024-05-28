@@ -4,6 +4,7 @@ package pipeline
 type Step struct {
 	Name     string   `yaml:"name"`
 	Image    string   `yaml:"image"`
+	Branch   string   `yaml:"branch"`
 	Commands []string `yaml:"commands"`
 }
 

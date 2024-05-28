@@ -2,6 +2,7 @@ pipeline:
   steps:
     - name: Build
       image: golang:1.22.1
+      branch: dev
       commands:
         - echo "Build cicd-service-go"
         - go mod download
@@ -11,22 +12,30 @@ pipeline:
 
     - name: Test
       image: golang:1.22.1
+      branch: dev
       commands:
         - echo "Tests for cicd-service-go"
         - go test -v ./...
         - echo "Tests for cicd-service-go DONE"
 
-    - name: Build and Push docker image
+    - name: Build docker image
       image: docker:latest
+      branch: dev
       commands:
         - echo "Build docker image cicd-service-go:latest"
         - docker build -t cicd-service-go:latest .
         - echo "Build docker image cicd-service-go:latest DONE"
+
+    - name: Push docker image
+      image: docker:latest
+      branch: dev
+      commands:
         - docker tag cicd-service-go:latest registry:5000/cicd-service-go:latest
         - docker push registry:5000/cicd-service-go:latest
         - echo "Push docker image cicd-service-go:latest DONE"
 
     - name: Deploy
       image:
+      branch: dev
       commands:
         - ./deploy.sh
