@@ -1,0 +1,32 @@
+stages:
+  - build
+  - test
+  - build_docker_image
+  - deploy
+
+build:
+  stage: build
+  image: golang:1.22.1
+  script:
+    - go mod download
+    - go mod verify
+    - go build -v -o cicd-service-go ./cmd/app
+
+test:
+  stage: test
+  image: golang:1.22.1
+  script:
+    - go test -v ./...
+
+build_docker_image:
+  stage: build_docker_image
+  image: docker:latest
+  script:
+    - docker build -t cicd-service-go:latest .
+    - docker tag cicd-service-go:latest registry:5000/cicd-service-go:latest
+    - docker push registry:5000/cicd-service-go:latest
+
+deploy:
+  stage: deploy
+  script:
+    - ./deploy.sh
