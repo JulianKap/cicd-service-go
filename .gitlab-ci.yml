@@ -40,11 +40,13 @@ deploy:
   image: registry.local:5000/cicd-ansible:latest
   script:
     - export ANSIBLE_HOST_KEY_CHECKING=False
-    - ansible-playbook --inventory ansible/inventories/hosts-gitlab.ini ansible/playbooks/deploy.yml
+    - cd ./ansible/
+    - ansible-playbook --inventory inventories/hosts-gitlab.ini playbooks/deploy.yml
 
 destroy:
   stage: destroy
   image: registry.local:5000/cicd-ansible:latest
   script:
     - export ANSIBLE_HOST_KEY_CHECKING=False
-    - ansible-playbook --inventory ansible/inventories/hosts-gitlab.ini ansible/playbooks/destroy.yml
+    - cd ./ansible/
+    - ansible-playbook --inventory inventories/hosts-gitlab.ini playbooks/destroy.yml

@@ -58,7 +58,7 @@ pipeline {
             steps {
                 script {
                     sh 'export ANSIBLE_HOST_KEY_CHECKING=False'
-                    sh 'ansible-playbook --inventory ansible/inventories/hosts-jenkins.ini ansible/playbooks/deploy.yml'
+                    sh 'cd ./ansible/ &&  ansible-playbook --inventory ansible/inventories/hosts-jenkins.ini ansible/playbooks/deploy.yml'
                 }
             }
         }
@@ -72,7 +72,7 @@ pipeline {
             steps {
                 script {
                     sh 'export ANSIBLE_HOST_KEY_CHECKING=False'
-                    sh 'ansible-playbook --inventory ansible/inventories/hosts-jenkins.ini ansible/playbooks/destroy.yml'
+                    sh 'cd ./ansible/ && ansible-playbook --inventory ansible/inventories/hosts-jenkins.ini ansible/playbooks/destroy.yml'
                 }
             }
         }
