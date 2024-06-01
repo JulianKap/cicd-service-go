@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// HandleTaskCreate создание таски
+// HandleTaskCreate создание задания
 func HandleTaskCreate(ctx echo.Context) (err error) {
 	codeValidation, respValidation := sources.ValidatePermission()
 	if codeValidation != http.StatusOK {
@@ -59,7 +59,7 @@ func HandleTaskCreate(ctx echo.Context) (err error) {
 	})
 }
 
-// HandleTasksGetList получить список всех тасок
+// HandleTasksGetList получить список всех заданий
 func HandleTasksGetList(ctx echo.Context) (err error) {
 	codeValidation, respValidation := sources.ValidatePermission()
 	if codeValidation != http.StatusOK {
@@ -73,7 +73,7 @@ func HandleTasksGetList(ctx echo.Context) (err error) {
 	}
 
 	var tasks Tasks
-	if err := tasks.getTasksByProjectETCD(db.InstanceETCD, &project); err != nil {
+	if err := tasks.getTasksByProjectETCD(db.InstanceETCD, &project, false); err != nil {
 		log.Error("HandleTasksGetList #0: ", err)
 		return ctx.JSON(http.StatusInternalServerError, TasksResponse{
 			Message: "Error get tasks list",
@@ -86,7 +86,7 @@ func HandleTasksGetList(ctx echo.Context) (err error) {
 	})
 }
 
-// HandleTaskGetByID получить конкретную таску по id
+// HandleTaskGetByID получить конкретное задание по id
 func HandleTaskGetByID(ctx echo.Context) (err error) {
 	codeValidation, respValidation := sources.ValidatePermission()
 	if codeValidation != http.StatusOK {
@@ -175,4 +175,31 @@ func HandleTaskDeleteByID(ctx echo.Context) (err error) {
 		log.Info("HandleTaskDeleteByID #2: not found task")
 		return ctx.JSON(http.StatusBadRequest, TaskResponse{Message: "Task not found"})
 	}
+}
+
+// HandleTasksGetHistoryList получить список историчных заданий
+func HandleTasksGetHistoryList(ctx echo.Context) (err error) {
+	codeValidation, respValidation := sources.ValidatePermission()
+	if codeValidation != http.StatusOK {
+		return ctx.JSON(codeValidation, respValidation)
+	}
+
+	var project sources.Project
+	codeValPrj, respValPrj := sources.ValidateProjectById(ctx, &project, "id_project")
+	if codeValPrj != http.StatusOK {
+		return ctx.JSON(codeValPrj, respValPrj)
+	}
+
+	var tasks Tasks
+	if err := tasks.getTasksByProjectETCD(db.InstanceETCD, &project, true); err != nil {
+		log.Error("HandleTasksGetHistoryList #0: ", err)
+		return ctx.JSON(http.StatusInternalServerError, TasksResponse{
+			Message: "Error get tasks list",
+			Error:   utility.StringPtr(err.Error()),
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, TasksResponse{
+		Tasks: tasks.Tasks,
+	})
 }

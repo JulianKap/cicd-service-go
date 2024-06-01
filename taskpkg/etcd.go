@@ -32,8 +32,14 @@ func GetKeyTaskProject(t *Task) string {
 }
 
 // getTasksETCD получить список всех заданий из etcd по всем проектам
-func (t *Tasks) getTasksETCD(cli *clientv3.Client) error {
-	key := GetKeyTasks()
+func (t *Tasks) getTasksETCD(cli *clientv3.Client, isHistory bool) error {
+	var key string
+	if isHistory {
+		key = GetKeyTasksHistory()
+	} else {
+		key = GetKeyTasks()
+	}
+
 	resp, err := etcd.GetKey(cli, key)
 	if err != nil {
 		log.Error("getTasksETCD #0: ", err)
@@ -57,7 +63,7 @@ func (t *Tasks) getTasksETCD(cli *clientv3.Client) error {
 }
 
 // setTasksETCD добавить список заданий для всех проектов
-func (t *Tasks) setTasksETCD(cli *clientv3.Client) error {
+func (t *Tasks) setTasksETCD(cli *clientv3.Client, isHistory bool) error {
 	if len(t.Tasks) == 0 {
 		log.Info("setTasksETCD #0: not found tasks")
 	}
@@ -68,7 +74,14 @@ func (t *Tasks) setTasksETCD(cli *clientv3.Client) error {
 		return err
 	}
 
-	if err = etcd.SetKey(cli, GetKeyTasks(), string(tasksJSON)); err != nil {
+	var key string
+	if isHistory {
+		key = GetKeyTasksHistory()
+	} else {
+		key = GetKeyTasks()
+	}
+
+	if err = etcd.SetKey(cli, key, string(tasksJSON)); err != nil {
 		log.Error("setTasksETCD #3: ", err)
 		return err
 	}
@@ -77,9 +90,9 @@ func (t *Tasks) setTasksETCD(cli *clientv3.Client) error {
 }
 
 // getTasksByProjectETCD получить список всех заданий из etcd по указанному проекту
-func (t *Tasks) getTasksByProjectETCD(cli *clientv3.Client, p *sources.Project) error {
+func (t *Tasks) getTasksByProjectETCD(cli *clientv3.Client, p *sources.Project, isHistory bool) error {
 	var allTask Tasks
-	if err := allTask.getTasksETCD(cli); err != nil {
+	if err := allTask.getTasksETCD(cli, isHistory); err != nil {
 		log.Error("getTasksByProjectETCD #0: ", err)
 		return err
 	}
@@ -133,13 +146,13 @@ func (t *Task) setTaskByProjectETCD(cli *clientv3.Client, p *sources.Project) er
 
 	// Добавление тасок в общий список
 	var tasks Tasks
-	if err := tasks.getTasksByProjectETCD(cli, p); err != nil {
+	if err := tasks.getTasksByProjectETCD(cli, p, false); err != nil {
 		log.Error("setTaskByProjectETCD #1: ", err)
 		return err
 	}
 	// Добавление задания в общий список заданий
 	tasks.Tasks = append(tasks.Tasks, t)
-	if err = tasks.setTasksETCD(cli); err != nil {
+	if err = tasks.setTasksETCD(cli, false); err != nil {
 		log.Error("setTaskByProjectETCD #2: ", err)
 		return err
 	}
@@ -168,7 +181,7 @@ func (t *Task) setTaskByProjectETCD(cli *clientv3.Client, p *sources.Project) er
 // markerDelTaskByProjectETCD отметить задачу как удаляемую. Планировщик все проверит и сам ее удалит
 func (t *Task) markerDelTaskByProjectETCD(cli *clientv3.Client, p *sources.Project) (bool, error) {
 	var tasks Tasks
-	if err := tasks.getTasksByProjectETCD(cli, p); err != nil {
+	if err := tasks.getTasksByProjectETCD(cli, p, false); err != nil {
 		log.Error("markerDelTaskByProjectETCD #0: ", err)
 		return false, err
 	}
@@ -202,14 +215,35 @@ func (t *Task) markerDelTaskByProjectETCD(cli *clientv3.Client, p *sources.Proje
 	return state, nil
 }
 
-func GetTasksByProjectETCD(cli *clientv3.Client, p *sources.Project, t *Tasks) error {
-	return t.getTasksByProjectETCD(cli, p)
+// setHistoryTaskByProjectETCD добавление задания в список истории
+func (t *Task) setHistoryTaskByProjectETCD(cli *clientv3.Client, p *sources.Project) error {
+	var historyTasks Tasks
+	if err := historyTasks.getTasksByProjectETCD(cli, p, true); err != nil {
+		log.Error("setHistoryTaskByProjectETCD #1: ", err)
+		return err
+	}
+	// Добавление задания в список истории
+	historyTasks.Tasks = append(historyTasks.Tasks, t)
+	if err := historyTasks.setTasksETCD(cli, true); err != nil {
+		log.Error("setHistoryTaskByProjectETCD #2: ", err)
+		return err
+	}
+
+	return nil
 }
 
-func SetTasksETCD(cli *clientv3.Client, t *Tasks) error {
-	return t.setTasksETCD(cli)
+func GetActualTasksByProjectETCD(cli *clientv3.Client, p *sources.Project, t *Tasks) error {
+	return t.getTasksByProjectETCD(cli, p, false)
 }
 
-func GetTasksETCD(cli *clientv3.Client, t *Tasks) error {
-	return t.getTasksETCD(cli)
+func SetActualTasksETCD(cli *clientv3.Client, t *Tasks) error {
+	return t.setTasksETCD(cli, false)
+}
+
+func GetActualTasksETCD(cli *clientv3.Client, t *Tasks) error {
+	return t.getTasksETCD(cli, false)
+}
+
+func SetHistoryTaskByProjectETCD(cli *clientv3.Client, p *sources.Project, t *Task) error {
+	return t.setHistoryTaskByProjectETCD(cli, p)
 }

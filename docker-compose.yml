@@ -15,7 +15,6 @@ volumes:
 
 services:
   cicd-service-01:
-    image: cicd-service-go:test
     container_name: cicd-service-01
     build:
       dockerfile: ./Dockerfile.dind
@@ -23,7 +22,7 @@ services:
       - ./configs/config-test.json:/app/config.json
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
-      - 3010:3000
+      - "3000:3000"
     restart: always
     depends_on:
       - etcd
@@ -45,7 +44,7 @@ services:
     volumes:
       - etcd-data:/data.etcd
     ports:
-      - 2379:2379
+      - "2379:2379"
     restart: always
 
   vault:

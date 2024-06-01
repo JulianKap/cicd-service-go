@@ -50,3 +50,16 @@ func PrepareStepCommand(j sources.Job, s pipeline.Step) (string, error) {
 
 	return strings.Join(commands, " && "), nil
 }
+
+// PrepareSubTasksStruct подготовить структуру шага
+func PrepareSubTasksStruct(s pipeline.Pipeline) []SubTaskResult {
+	var subTasks []SubTaskResult
+	for _, step := range s.Steps {
+		subTasks = append(subTasks, SubTaskResult{
+			Status: StepPending,
+			Name:   step.Name,
+		})
+	}
+
+	return subTasks
+}

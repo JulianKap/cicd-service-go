@@ -1,5 +1,5 @@
 .git*
-config.json*
+config.json
 Dockerfile
 docker-compose.yml
 docker-compose-ha.yml

@@ -128,7 +128,7 @@ func updateTaskForWorker(cli *clientv3.Client, m manager.Member, t *taskpkg.Task
 // updateAllTasks обновление всех заданий
 func updateAllTasks(cli *clientv3.Client, tasks *taskpkg.Tasks) error {
 	// Обновление списка заданий по всем проектам
-	if err := taskpkg.SetTasksETCD(cli, tasks); err != nil {
+	if err := taskpkg.SetActualTasksETCD(cli, tasks); err != nil {
 		log.Error("updateAllTasks #0: ", err)
 		return err
 	}
@@ -167,7 +167,7 @@ func getJobEtcd(t taskpkg.Task) (job sources.Job, err error) {
 // delTaskByProjectETCD удаление задания
 func delTaskByProjectETCD(cli *clientv3.Client, m *manager.Member, p *sources.Project, t *taskpkg.Task) error {
 	var tasks taskpkg.Tasks
-	if err := taskpkg.GetTasksByProjectETCD(cli, p, &tasks); err != nil {
+	if err := taskpkg.GetActualTasksByProjectETCD(cli, p, &tasks); err != nil {
 		log.Error("delTaskByProjectETCD #0: ", err)
 		return err
 	}

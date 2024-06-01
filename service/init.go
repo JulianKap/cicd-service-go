@@ -5,6 +5,7 @@ import (
 	"cicd-service-go/sources"
 	"cicd-service-go/taskpkg"
 	"github.com/labstack/echo/v4"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
 )
 
@@ -40,6 +41,7 @@ func initRoutes(e *echo.Echo) {
 	tasks := project.Group("/tasks")
 	tasks.PUT("/:id_project/create", taskpkg.HandleTaskCreate, projectAuthMiddleware)
 	tasks.GET("/:id_project/all", taskpkg.HandleTasksGetList, projectAuthMiddleware)
+	tasks.GET("/:id_project/history", taskpkg.HandleTasksGetHistoryList, projectAuthMiddleware)
 	tasks.GET("/:id_project/:id_task", taskpkg.HandleTaskGetByID, projectAuthMiddleware)
 	tasks.DELETE("/:id_project/:id_task", taskpkg.HandleTaskDeleteByID, projectAuthMiddleware)
 
@@ -55,4 +57,7 @@ func initRoutes(e *echo.Echo) {
 	e.GET("/hc", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, nil)
 	})
+
+	// Metrics
+	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
 }

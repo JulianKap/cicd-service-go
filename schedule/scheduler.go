@@ -14,7 +14,7 @@ func tasksScheduler() (bool, error) {
 
 	// Получаем список всех тасок
 	var tasks taskpkg.Tasks
-	if err := taskpkg.GetTasksETCD(db.InstanceETCD, &tasks); err != nil {
+	if err := taskpkg.GetActualTasksETCD(db.InstanceETCD, &tasks); err != nil {
 		log.Error("tasksScheduler #0: ", err)
 		return false, err
 	}
@@ -106,7 +106,7 @@ func tasksScheduler() (bool, error) {
 		}
 
 		if taskInHistory {
-			if err := setTaskInHistory(*t); err != nil {
+			if err := setTaskInHistory(t); err != nil {
 				log.Error("tasksScheduler #7: ", err)
 			}
 
@@ -177,10 +177,13 @@ func tasksScheduler() (bool, error) {
 }
 
 // setTaskInHistory перенос задания в список истории
-func setTaskInHistory(task taskpkg.Task) error {
-	log.Debug("setTaskWorker #0: task: ", task.ID)
+func setTaskInHistory(t *taskpkg.Task) error {
+	log.Debug("setTaskInHistory #0: move task: ", t.ID, " in history list")
 
-	// todo: добавить отправку в task_history
+	if err := taskpkg.SetHistoryTaskByProjectETCD(db.InstanceETCD, &sources.Project{ID: t.ProjectID}, t); err != nil {
+		log.Error("setTaskInHistory #1: ", err)
+		return err
+	}
 	return nil
 }
 

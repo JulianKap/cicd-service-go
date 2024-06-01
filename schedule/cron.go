@@ -18,7 +18,6 @@ var (
 
 func init() {
 	CloseCronChan = make(chan bool)
-	controlChan = make(chan int, 3) // todo: взять из конфига
 }
 
 func сhanLock() {
@@ -30,9 +29,20 @@ func сhanUnlock() {
 }
 
 func RunCron() {
+	countParallelTasks := viper.GetInt("schedule.tasks_parallel_workers")
+	if countParallelTasks < 1 {
+		countParallelTasks = 5 // default
+	}
+
+	if countParallelTasks > 100 {
+		countParallelTasks = 100
+	}
+
+	controlChan = make(chan int, countParallelTasks)
+
 	cronTimeSeconds := viper.GetInt("schedule.cron_timer_s")
 	if cronTimeSeconds < 1 {
-		cronTimeSeconds = 60 // default
+		cronTimeSeconds = 60
 	}
 
 	scheduleTicker := time.NewTicker(time.Duration(cronTimeSeconds) * time.Second)
@@ -125,8 +135,8 @@ func runScheduleWorker() error {
 				continue
 			}
 
-			tm := time.Now()
-			t.CreateAt = &tm
+			start := time.Now()
+			t.Status.RunningAt = &start
 			t.Status.Status = taskpkg.Running
 
 			// Отмечаем, что задание уже запущено
@@ -136,7 +146,8 @@ func runScheduleWorker() error {
 			}
 
 			// Запуск выполнения пайплайна
-			if err := worker.RunWorkerTask(j, p, *t); err != nil {
+			subTasks, err := worker.RunWorkerTask(j, p, *t)
+			if err != nil {
 				log.Error("runScheduleWorker #8: ", err)
 
 				t.Status.Status = taskpkg.Failed
@@ -145,6 +156,10 @@ func runScheduleWorker() error {
 			} else {
 				t.Status.Status = taskpkg.Completed
 			}
+
+			elapsed := time.Since(start)
+			t.Status.ElapsedSec = int(elapsed.Seconds())
+			t.Status.Steps = subTasks
 
 			if err := updateTaskForWorker(db.InstanceETCD, manager.MemberInfo, t); err != nil {
 				log.Error("runScheduleWorker #9: ", err)
