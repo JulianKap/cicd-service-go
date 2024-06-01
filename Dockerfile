@@ -11,7 +11,7 @@ COPY . .
 
 RUN CGO_ENABLED=0 go build -o cicd-service-go ./cmd/app
 
-FROM alpine/curl:3.14
+FROM docker:26.1.1-dind-alpine3.19
 
 WORKDIR /app
 

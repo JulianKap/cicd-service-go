@@ -17,7 +17,7 @@ services:
   cicd-service-01:
     container_name: cicd-service-01
     build:
-      dockerfile: ./Dockerfile.dind
+      dockerfile: .
     volumes:
       - ./configs/config-test.json:/app/config.json
       - /var/run/docker.sock:/var/run/docker.sock
@@ -30,7 +30,7 @@ services:
   cicd-service-02:
     container_name: cicd-service-02
     build:
-      dockerfile: ./Dockerfile.dind
+      dockerfile: .
     volumes:
       - ./configs/config-test.json:/app/config.json
       - /var/run/docker.sock:/var/run/docker.sock
@@ -43,7 +43,7 @@ services:
   cicd-service-03:
     container_name: cicd-service-03
     build:
-      dockerfile: ./Dockerfile.dind
+      dockerfile: .
     volumes:
       - ./configs/config-test.json:/app/config.json
       - /var/run/docker.sock:/var/run/docker.sock
