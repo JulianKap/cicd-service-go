@@ -15,12 +15,27 @@ pipeline:
         - go test -v ./...
 
     - name: Build docker image
-      image: docker:latest
+      image: gcr.io/kaniko-project/executor:latest
       branch: dev
       commands:
-        - docker build -t cicd-service-go:latest .
-        - docker tag cicd-service-go:latest registry:5000/cicd-service-go:latest
-        - docker push registry:5000/cicd-service-go:latest
+        - mkdir -p /kaniko/.docker
+        - echo "{\"insecure-registries\": [\"http://registry.local:5000\"]}" > /kaniko/.docker/config.json
+        - > 
+          /kaniko/executor 
+          --context /job/cicd-service-go
+          --dockerfile /job/cicd-service-go/Dockerfile 
+          --destination registry.local:5000/cicd-service-go:cicd-test
+          --insecure
+
+
+#    - name: Build docker image
+#      image: docker:latest
+#      branch: dev
+#      commands:
+#        - docker build -t cicd-service-go:cicd-test .
+#        - docker tag cicd-service-go:cicd-test registry.local:5000/cicd-service-go:cicd-test
+#        - docker push registry:5000/cicd-service-go:cicd-test
+#
 
 #    - name: Push docker image
 #      image: docker:latest
@@ -34,3 +49,17 @@ pipeline:
 #      branch: dev
 #      commands:
 #        - ./deploy.sh
+
+#    - name: Clear image
+#      images: alpine:latest
+#      branch: dev
+#      command:
+#        - apk add --no-cache curl
+#        - >
+#          digest=$(curl -s -I -X GET http://registry.local:5000/v2/cicd-service-go/manifests/cicd-test |
+#          grep Docker-Content-Digest |
+#          awk '{print $2}' |
+#          tr -d $'\r')
+#        - echo "Digest to delete: $digest"
+#        - curl -X DELETE http://registry.local:5000/v2/cicd-service-go/manifests/$digest
+#        - echo "Image cicd-service-go with tag cicd-test deleted from registry registry.local:5000"

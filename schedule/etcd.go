@@ -94,16 +94,18 @@ func setTaskForWorker(cli *clientv3.Client, m manager.Member, t *taskpkg.Task) (
 
 // updateTaskForWorker обновить статус выполнения задания для воркера
 func updateTaskForWorker(cli *clientv3.Client, m manager.Member, t *taskpkg.Task) error {
+	log.Debug("updateTaskForWorker #0: update task: ", t.ID, " to state: ", t.Status.Status)
+
 	var tasks taskpkg.Tasks
 	if err := getTasksForWorker(cli, m, &tasks); err != nil {
-		log.Error("updateTaskForWorker #0: ", err)
+		log.Error("updateTaskForWorker #1: ", err)
 		return err
 	}
 
 	var newTasks taskpkg.Tasks
 	for _, task := range tasks.Tasks {
 		if task.ID == t.ID {
-			log.Debug("updateTaskForWorker #1: update status task on ", t.Status.Status, " (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
+			log.Debug("updateTaskForWorker #2: update status task on ", t.Status.Status, " (project_id=", t.ProjectID, " job_id=", t.JobID, " task_id=", t.ID, ")")
 			newTasks.Tasks = append(newTasks.Tasks, t)
 		} else {
 			newTasks.Tasks = append(newTasks.Tasks, task)
@@ -112,13 +114,13 @@ func updateTaskForWorker(cli *clientv3.Client, m manager.Member, t *taskpkg.Task
 
 	tasksJSON, err := json.Marshal(newTasks)
 	if err != nil {
-		log.Error("updateTaskForWorker #2: ", err)
+		log.Error("updateTaskForWorker #3: ", err)
 		return err
 	}
 
 	key := manager.Keys.Worker + "/tasks" //todo: править
 	if err = etcd.SetKey(cli, key, string(tasksJSON)); err != nil {
-		log.Error("updateTaskForWorker #3: ", err)
+		log.Error("updateTaskForWorker #4: ", err)
 		return err
 	}
 
@@ -166,9 +168,11 @@ func getJobEtcd(t taskpkg.Task) (job sources.Job, err error) {
 
 // delTaskByProjectETCD удаление задания
 func delTaskByProjectETCD(cli *clientv3.Client, m *manager.Member, p *sources.Project, t *taskpkg.Task) error {
+	log.Debug("delTaskByProjectETCD #0: delete task: ", t.ID)
+
 	var tasks taskpkg.Tasks
 	if err := taskpkg.GetActualTasksByProjectETCD(cli, p, &tasks); err != nil {
-		log.Error("delTaskByProjectETCD #0: ", err)
+		log.Error("delTaskByProjectETCD #1: ", err)
 		return err
 	}
 
@@ -181,25 +185,25 @@ func delTaskByProjectETCD(cli *clientv3.Client, m *manager.Member, p *sources.Pr
 
 	valueJSON, err := json.Marshal(newTasks)
 	if err != nil {
-		log.Error("delTaskByProjectETCD #1: ", err)
+		log.Error("delTaskByProjectETCD #2: ", err)
 		return err
 	}
 
 	// Обновляем общий список заданий
 	if err = etcd.SetKey(cli, taskpkg.GetKeyTasks(), string(valueJSON)); err != nil {
-		log.Error("delTaskByProjectETCD #2: ", err)
+		log.Error("delTaskByProjectETCD #3: ", err)
 		return err
 	}
 
 	// Удаляем задание в разделе проекта
 	if err = etcd.DelKey(cli, taskpkg.GetKeyTaskProject(t)); err != nil {
-		log.Error("delTaskByProjectETCD #3: ", err)
+		log.Error("delTaskByProjectETCD #4: ", err)
 		return err
 	}
 
 	var tasksWorker taskpkg.Tasks
 	if err := getTasksForWorker(cli, *m, &tasksWorker); err != nil {
-		log.Error("delTaskByProjectETCD #4: ", err)
+		log.Error("delTaskByProjectETCD #5: ", err)
 		return err
 	}
 
@@ -212,13 +216,13 @@ func delTaskByProjectETCD(cli *clientv3.Client, m *manager.Member, p *sources.Pr
 
 	tasksJSONWorker, err := json.Marshal(newTasksWorker)
 	if err != nil {
-		log.Error("delTaskByProjectETCD #5: ", err)
+		log.Error("delTaskByProjectETCD #6: ", err)
 		return err
 	}
 
 	key := GetKeyTasksWorker(*m)
 	if err = etcd.SetKey(cli, key, string(tasksJSONWorker)); err != nil {
-		log.Error("delTaskByProjectETCD #6: ", err)
+		log.Error("delTaskByProjectETCD #7: ", err)
 		return err
 	}
 
