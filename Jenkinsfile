@@ -7,11 +7,11 @@ pipeline {
 
     stages {
         stage('Build') {
-           // agent {
-          //      docker {
-          //          image 'golang:1.22.1'
-         //       }
-          //  }
+            agent {
+                docker {
+                    image 'golang:1.22.1'
+                }
+            }
             steps {
                 script {
                     sh 'go mod download'
@@ -22,11 +22,11 @@ pipeline {
         }
 
         stage('Test') {
-            //agent {
-             //   docker {
-            //        image 'golang:1.22.1'
-            //    }
-           // }
+            agent {
+                docker {
+                    image 'golang:1.22.1'
+                }
+            }
             steps {
                 script {
                     sh 'go test -v ./...'
@@ -35,12 +35,12 @@ pipeline {
         }
 
         stage('Build Docker Image') {
-           // agent {
-          //      docker {
-          //          image 'docker:26.1.1-dind-alpine3.19'
-           //         args '-v /var/run/docker.sock:/var/run/docker.sock'
-          //      }
-          //  }
+            agent {
+                docker {
+                    image 'docker:26.1.1-dind-alpine3.19'
+                    args '-v /var/run/docker.sock:/var/run/docker.sock'
+                }
+            }
             steps {
                 script {
                     sh 'docker build -t ${DOCKER_IMAGE} .'
@@ -50,11 +50,11 @@ pipeline {
         }
 
         stage('Deploy') {
-          //  agent {
-          //      docker {
-         //           image 'registry.local:5000/cicd-ansible:latest'
-         //       }
-         //   }
+            agent {
+                docker {
+                    image 'registry.local:5000/cicd-ansible:latest'
+                }
+            }
             steps {
                 script {
                     sh 'cd ./ansible/'
