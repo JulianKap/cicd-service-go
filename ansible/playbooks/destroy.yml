@@ -1,0 +1,7 @@
+---
+- hosts: cicd
+  become: true
+  roles:
+    - role: roles/cicd-service-go
+      vars:
+        is_cicd_service_go_deploy: false

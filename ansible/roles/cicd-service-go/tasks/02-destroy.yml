@@ -1,0 +1,9 @@
+---
+# tasks file for strapi
+- name: Down docker compose for cicd-service-go
+  ansible.builtin.command: "docker compose -f {{ cicd_service_go_work_dir }}/docker-compose.yml down"
+
+- name: Delete cicd-service-go dirs
+  file:
+    path: "{{ cicd_service_go_work_dir }}"
+    state: absent

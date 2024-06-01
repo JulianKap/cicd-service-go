@@ -1,0 +1,60 @@
+version: '3.9'
+
+networks:
+  default:
+    name: cicd-network
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.105.0.0/16
+
+volumes:
+  etcd-data:
+  vault-data:
+
+services:
+  cicd-service:
+    container_name: cicd-service
+    image: {{ cicd_service_go_image }}:{{ cicd_service_go_image_tag }}
+    volumes:
+      - ./config.json:/app/config.json
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "{{ cicd_service_go_port }}:3000"
+    restart: always
+    depends_on:
+      - etcd
+
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.13
+    container_name: cicd
+    command:
+      - etcd
+      - --name=etcd
+      - --data-dir=data.etcd
+      - --advertise-client-urls=http://etcd:2379
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --initial-advertise-peer-urls=http://etcd:2380
+      - --listen-peer-urls=http://0.0.0.0:2380
+#      - --initial-manager=etcd=http://etcd:2380
+#      - --initial-manager-state=new
+#      - --initial-manager-token=etcd-manager
+    volumes:
+      - etcd-data:/data.etcd
+    ports:
+      - "2379:2379"
+    restart: always
+
+  vault:
+    image: vault:1.13.3
+    container_name: vault
+    environment:
+      VAULT_ADDR: "http://0.0.0.0:8200"
+      VAULT_DEV_ROOT_TOKEN_ID: {{ cicd_service_go_vault_root_token }}
+    ports:
+      - "8200:8200"
+    volumes:
+      - vault-data:/vault/data
+    cap_add:
+      - IPC_LOCK
+    restart: always

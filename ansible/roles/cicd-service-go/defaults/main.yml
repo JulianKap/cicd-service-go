@@ -1,0 +1,15 @@
+---
+is_cicd_service_go_deploy        : true
+
+# Рабочая дирректория
+cicd_service_go_work_dir         : "/opt/cicd-service-go"
+
+# Докер образ
+cicd_service_go_image            : "registry.local:5000/cicd-service-go"
+cicd_service_go_image_tag        : "cicd-test"
+
+# Порт для прослушивания
+cicd_service_go_port             : 3000
+
+# Токен для доступа к vault
+cicd_service_go_vault_root_token : test

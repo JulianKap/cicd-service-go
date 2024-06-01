@@ -1,0 +1,6 @@
+---
+- include_tasks: tasks/01-deploy.yml
+  when: is_cicd_service_go_deploy is true
+
+- include_tasks: tasks/02-destroy.yml
+  when: is_cicd_service_go_deploy is false

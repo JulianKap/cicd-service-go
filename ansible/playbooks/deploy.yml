@@ -1,0 +1,5 @@
+---
+- hosts: cicd
+  become: true
+  roles:
+    - role: roles/cicd-service-go

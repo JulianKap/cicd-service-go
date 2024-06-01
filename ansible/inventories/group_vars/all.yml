@@ -1,0 +1,14 @@
+---
+###########################################
+## ANSIBLE
+###########################################
+ansible_connection              : ssh
+ansible_user                    : cicd
+ansible_ssh_pass                : "2374321"
+ansible_sudo_pass               : "2374321"
+env                             : dev
+
+
+# Порт для прослушивания
+cicd_service_go_port            : 3010
+cicd_service_go_vault_root_token: 37fdfas35dSD^*)_2

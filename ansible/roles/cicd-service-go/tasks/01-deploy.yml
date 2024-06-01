@@ -1,0 +1,44 @@
+
+---
+# tasks file for strapi
+- name: Create directory for cicd-service-go
+  file:
+    path: "{{ cicd_service_go_work_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Pull an image node-exporter
+  community.docker.docker_image:
+    name: "{{ cicd_service_go_image }}"
+    source: pull
+    tag: "{{ cicd_service_go_image_tag }}"
+    pull:
+      platform: amd64
+
+- name: Add docker-compose.yml file for cicd-service-go
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ cicd_service_go_work_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: 0644
+  register: docker_compose_configs
+
+- name: Add cicd-service-go config
+  template:
+    src: config.json.j2
+    dest: "{{ cicd_service_go_work_dir }}/config.json"
+    owner: root
+    group: root
+    mode: 0644
+  register: cicd_config
+
+- name: Down docker compose for cicd-service-go
+  ansible.builtin.command: "docker compose -f {{ cicd_service_go_work_dir }}/docker-compose.yml down"
+  when: cicd_config.changed
+    or docker_compose_configs.changed
+
+- name: Up docker compose for cicd-service-go
+  ansible.builtin.command: "docker compose -f {{ cicd_service_go_work_dir }}/docker-compose.yml up -d"

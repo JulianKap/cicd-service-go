@@ -17,8 +17,8 @@
             "timeout_s": "5"
         },
         "vault": {
-            "addr": "http://192.168.122.30:8200",
-            "token": "1237fdfas35dSD^*)_23sd",
+            "addr": "http://vault:8200",
+            "token": "{{ cicd_service_go_vault_root_token }}",
             "timeout_s": "60"
         }
     },
