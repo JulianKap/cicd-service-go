@@ -26,14 +26,14 @@ pipeline:
       branch: dev
       commands:
         - cd ./ansible/
-        - ansible-playbook --inventory inventories/hosts-gitlab.ini playbooks/deploy.yml
+        - ansible-playbook --inventory inventories/hosts-service.ini playbooks/deploy.yml
 
 #    - name: Destroy on DEV
 #      image: registry.local:5000/cicd-ansible:latest
 #      branch: dev
 #      commands:
 #        - cd ./ansible/
-#        - ansible-playbook --inventory inventories/hosts-gitlab.ini playbooks/destroy.yml
+#        - ansible-playbook --inventory inventories/hosts-service.ini playbooks/destroy.yml
 
 #    - name: Deploy to DEV
 #      image: debian:12.5-slim
