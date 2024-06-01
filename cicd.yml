@@ -26,13 +26,11 @@ pipeline:
       branch: dev
       commands:
         - export ANSIBLE_HOST_KEY_CHECKING=False
-        - cd ./ansible/
-        - ansible-playbook --inventory inventories/hosts-service.ini playbooks/deploy.yml
+        - ansible-playbook --inventory ansible/inventories/hosts-service.ini ansible/playbooks/deploy.yml
 
     - name: Destroy on DEV
       image: registry.local:5000/cicd-ansible:latest
       branch: dev
       commands:
         - export ANSIBLE_HOST_KEY_CHECKING=False
-        - cd ./ansible/
-        - ansible-playbook --inventory inventories/hosts-service.ini playbooks/destroy.yml
+        - ansible-playbook --inventory ansible/inventories/hosts-service.ini ansible/playbooks/destroy.yml
