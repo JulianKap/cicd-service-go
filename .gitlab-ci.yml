@@ -3,6 +3,7 @@ stages:
   - test
   - build_docker_image
   - deploy
+  - destroy
 
 build:
   stage: build
@@ -40,4 +41,12 @@ deploy:
   script:
     - export ANSIBLE_HOST_KEY_CHECKING=False
     - cd ./ansible/
-    - ansible-playbook --inventory inventories/hosts-service.ini playbooks/deploy.yml
+    - ansible-playbook --inventory inventories/hosts-gitlab.ini playbooks/deploy.yml
+
+destroy:
+  stage: destroy
+  image: registry.local:5000/cicd-ansible:latest
+  script:
+    - export ANSIBLE_HOST_KEY_CHECKING=False
+    - cd ./ansible/
+    - ansible-playbook --inventory inventories/hosts-gitlab.ini playbooks/destroy.yml

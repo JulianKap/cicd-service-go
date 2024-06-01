@@ -29,20 +29,10 @@ pipeline:
         - cd ./ansible/
         - ansible-playbook --inventory inventories/hosts-service.ini playbooks/deploy.yml
 
-#    - name: Destroy on DEV
-#      image: registry.local:5000/cicd-ansible:latest
-#      branch: dev
-#      commands:
-#        - cd ./ansible/
-#        - ansible-playbook --inventory inventories/hosts-service.ini playbooks/destroy.yml
-
-#    - name: Deploy to DEV
-#      image: debian:12.5-slim
-#      branch: dev
-#      commands:
-#        - scp -o StrictHostKeyChecking=no /job/cicd-service-go/configs/config-test.json cicd@dev.local:/opt/cicd-service-go/config.json
-#        - |
-#          ssh -o StrictHostKeyChecking=no cicd@dev.local:/opt/cicd-service-go/config.json \
-#          "cd $DEPLOY_PATH && \
-#          IMAGE=$CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH-$CI_COMMIT_SHORT_SHA yq e -i '.services.email-service.image = env(IMAGE)' ./docker-compose.yml && \
-#          docker-compose pull && docker-compose up -d && docker-compose ps"
+    - name: Destroy on DEV
+      image: registry.local:5000/cicd-ansible:latest
+      branch: dev
+      commands:
+        - export ANSIBLE_HOST_KEY_CHECKING=False
+        - cd ./ansible/
+        - ansible-playbook --inventory inventories/hosts-service.ini playbooks/destroy.yml
