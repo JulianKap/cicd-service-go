@@ -20,7 +20,7 @@ test:
 
 build_docker_image:
   stage: build_docker_image
-  image: docker:latest
+  image: docker:26.1.1-dind-alpine3.19
   script:
     - docker build -t registry.local:5000/cicd-service-go:cicd-test .
     - docker push registry.local:5000/cicd-service-go:cicd-test

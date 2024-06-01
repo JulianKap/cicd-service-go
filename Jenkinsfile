@@ -1,10 +1,19 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_IMAGE = "registry.local:5000/cicd-service-go:cicd-test"
+    }
+
     stages {
         stage('Build') {
+            agent {
+                docker {
+                    image 'golang:1.22.1'
+                }
+            }
             steps {
-                container('golang:1.22.1') {
+                script {
                     sh 'go mod download'
                     sh 'go mod verify'
                     sh 'go build -v -o cicd-service-go ./cmd/app'
@@ -13,27 +22,42 @@ pipeline {
         }
 
         stage('Test') {
+            agent {
+                docker {
+                    image 'golang:1.22.1'
+                }
+            }
             steps {
-                container('golang:1.22.1') {
+                script {
                     sh 'go test -v ./...'
                 }
             }
         }
 
-        stage('Build and Push docker image') {
+        stage('Build Docker Image') {
+            agent {
+                docker {
+                    image 'docker:26.1.1-dind-alpine3.19'
+                    args '-v /var/run/docker.sock:/var/run/docker.sock'
+                }
+            }
             steps {
-                container('docker:26.1.1-dind-alpine3.19') {
-                    sh 'docker build -t cicd-service-go:latest .'
-                    sh 'docker tag cicd-service-go:latest registry:5000/cicd-service-go:latest'
-                    sh 'docker push registry:5000/cicd-service-go:latest'
+                script {
+                    sh 'docker build -t ${DOCKER_IMAGE} .'
+                    sh 'docker push ${DOCKER_IMAGE}'
                 }
             }
         }
 
-        stage('Deploy to DEV') {
+        stage('Deploy') {
+            agent {
+                docker {
+                    image 'registry.local:5000/cicd-ansible:latest'
+                }
+            }
             steps {
-                container('registry.local:5000/cicd-ansible:latest') {
-                    sh 'd ./ansible/'
+                script {
+                    sh 'cd ./ansible/'
                     sh 'ansible-playbook --inventory inventories/hosts-service.ini playbooks/deploy.yml'
                 }
             }
