@@ -19,7 +19,7 @@
             "timeout_s": "5"
         },
         "vault": {
-            "addr": "http://192.168.122.20:8200",
+            "addr": "http://vault.local:8200",
             "token": "1237fdfas35dSD^*)_23sd",
             "timeout_s": "60"
         }

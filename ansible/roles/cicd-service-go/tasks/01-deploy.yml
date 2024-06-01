@@ -9,7 +9,7 @@
     group: root
     mode: 0755
 
-- name: Pull an image node-exporter
+- name: Pull an image cicd-service-go
   community.docker.docker_image:
     name: "{{ cicd_service_go_image }}"
     source: pull

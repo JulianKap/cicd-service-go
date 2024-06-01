@@ -20,9 +20,9 @@ pipeline {
             }
         }
 
-        stage('Build docker image') {
+        stage('Build and Push docker image') {
             steps {
-                container('docker:latest') {
+                container('docker:26.1.1-dind-alpine3.19') {
                     sh 'docker build -t cicd-service-go:latest .'
                     sh 'docker tag cicd-service-go:latest registry:5000/cicd-service-go:latest'
                     sh 'docker push registry:5000/cicd-service-go:latest'
@@ -30,9 +30,12 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy to DEV') {
             steps {
-                sh './deploy.sh'
+                container('registry.local:5000/cicd-ansible:latest') {
+                    sh 'd ./ansible/'
+                    sh 'ansible-playbook --inventory inventories/hosts-service.ini playbooks/deploy.yml'
+                }
             }
         }
     }

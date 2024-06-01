@@ -22,11 +22,12 @@ build_docker_image:
   stage: build_docker_image
   image: docker:latest
   script:
-    - docker build -t cicd-service-go:latest .
-    - docker tag cicd-service-go:latest registry:5000/cicd-service-go:latest
-    - docker push registry:5000/cicd-service-go:latest
+    - docker build -t registry.local:5000/cicd-service-go:cicd-test .
+    - docker push registry.local:5000/cicd-service-go:cicd-test
 
 deploy:
   stage: deploy
+  image: registry.local:5000/cicd-ansible:latest
   script:
-    - ./deploy.sh
+    - cd ./ansible/
+    - ansible-playbook --inventory inventories/hosts-service.ini playbooks/deploy.yml
