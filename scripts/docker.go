@@ -116,18 +116,36 @@ func RunCommandImage(wg *sync.WaitGroup, image string, commands string) error {
 
 	output := newRewriter(ctx, image)
 
-	// Создание команды для запуска Docker образа с командами шага
-	cmd := exec.CommandContext(
-		ctx,
-		"docker", "run", "--rm", "-i", image, "/bin/sh", "-c", commands)
-	cmd.Stdout = output
-	cmd.Stderr = output
+	image_with_dind := "docker:"
 
-	err := cmd.Run()
-	if err != nil {
-		log.Error("RunCommandImage #0: ", err)
-		//panic(err)
-		return err
+	if strings.Contains(image, image_with_dind) {
+		// Создание команды для запуска Docker образа с командами шага
+		cmd := exec.CommandContext(
+			ctx,
+			"docker", "run", "-v", "/var/run/docker.sock:/var/run/docker.sock", "--rm", "-i", image, "/bin/sh", "-c", commands)
+		cmd.Stdout = output
+		cmd.Stderr = output
+
+		err := cmd.Run()
+		if err != nil {
+			log.Error("RunCommandImage #0: ", err)
+			//panic(err)
+			return err
+		}
+	} else {
+		// Создание команды для запуска Docker образа с командами шага
+		cmd := exec.CommandContext(
+			ctx,
+			"docker", "run", "--rm", "-i", image, "/bin/sh", "-c", commands)
+		cmd.Stdout = output
+		cmd.Stderr = output
+
+		err := cmd.Run()
+		if err != nil {
+			log.Error("RunCommandImage #1: ", err)
+			//panic(err)
+			return err
+		}
 	}
 
 	return nil
