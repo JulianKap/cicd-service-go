@@ -57,6 +57,7 @@ pipeline {
             }
             steps {
                 script {
+                    sh 'export ANSIBLE_HOST_KEY_CHECKING=False'
                     sh 'cd ./ansible/'
                     sh 'ansible-playbook --inventory inventories/hosts-service.ini playbooks/deploy.yml'
                 }

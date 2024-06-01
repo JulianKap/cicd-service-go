@@ -25,6 +25,7 @@ pipeline:
       image: registry.local:5000/cicd-ansible:latest
       branch: dev
       commands:
+        - export ANSIBLE_HOST_KEY_CHECKING=False
         - cd ./ansible/
         - ansible-playbook --inventory inventories/hosts-service.ini playbooks/deploy.yml
 

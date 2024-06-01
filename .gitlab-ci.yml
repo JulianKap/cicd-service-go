@@ -20,14 +20,24 @@ test:
 
 build_docker_image:
   stage: build_docker_image
-  image: docker:26.1.1-dind-alpine3.19
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   script:
-    - docker build -t registry.local:5000/cicd-service-go:gitlab-test .
-    - docker push registry.local:5000/cicd-service-go:gitlab-test
+    - mkdir -p /kaniko/.docker
+    - echo "{\"insecure-registries\":[\"http://registry.local:5000\"]}" > /kaniko/.docker/config.json
+    - >
+      /kaniko/executor 
+      --context $CI_PROJECT_DIR
+      --dockerfile $CI_PROJECT_DIR/Dockerfile 
+      --destination registry.local:5000/cicd-service-go:gitlab-test
+      --insecure
+      --cache=true
 
 deploy:
   stage: deploy
   image: registry.local:5000/cicd-ansible:latest
   script:
+    - export ANSIBLE_HOST_KEY_CHECKING=False
     - cd ./ansible/
     - ansible-playbook --inventory inventories/hosts-service.ini playbooks/deploy.yml
