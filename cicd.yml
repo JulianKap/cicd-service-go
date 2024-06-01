@@ -19,7 +19,7 @@ pipeline:
       branch: dev
       commands:
         - mkdir -p /kaniko/.docker
-        - echo "{\"insecure-registries\": [\"http://registry.local:5000\"]}" > /kaniko/.docker/config.json
+        - echo "{\"insecure-registries\":[\"http://registry.local:5000\"]}" > /kaniko/.docker/config.json
         - > 
           /kaniko/executor 
           --context /job/cicd-service-go

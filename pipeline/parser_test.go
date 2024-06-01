@@ -41,6 +41,40 @@ pipeline:
 			wantErr: false,
 		},
 		{
+			name: "Valid YAML",
+			yamlData: []byte(`
+pipeline:
+  steps:
+   - name: Build docker image
+     image: gcr.io/kaniko-project/executor:latest
+     branch: master
+     commands:
+     - mkdir -p /kaniko/.docker
+     - echo "{\"insecure-registries\":[\"http://registry.local:5000\"]}" > /kaniko/.docker/config.json
+     - >
+       /kaniko/executor
+       --context /job/cicd-service-go
+       --dockerfile /job/cicd-service-go/Dockerfile
+       --destination registry.local:5000/cicd-service-go:cicd-test
+       --insecure
+`),
+			expected: Pipeline{
+				Steps: []Step{
+					{
+						Name:   "Build docker image",
+						Image:  "gcr.io/kaniko-project/executor:latest",
+						Branch: "master",
+						Commands: []string{
+							"mkdir -p /kaniko/.docker",
+							"echo \"{\\\"insecure-registries\\\":[\\\"http://registry.local:5000\\\"]}\" > /kaniko/.docker/config.json",
+							"/kaniko/executor --context /job/cicd-service-go --dockerfile /job/cicd-service-go/Dockerfile --destination registry.local:5000/cicd-service-go:cicd-test --insecure\n",
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name:     "Invalid YAML",
 			yamlData: []byte("invalid YAML data"),
 			expected: Pipeline{},
