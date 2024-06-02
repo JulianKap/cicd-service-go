@@ -10,8 +10,8 @@ env                             : dev
 
 
 # Порт для прослушивания
-cicd_service_go_port            : 3011
+cicd_service_go_port            : 3012
 
-cicd_service_go_work_dir        : "/opt/cicd-service-go-01"
+cicd_service_go_work_dir        : "/opt/cicd-service-go-02"
 
 cicd_service_go_vault_root_token: 37fdfas35dSD^*)_2
