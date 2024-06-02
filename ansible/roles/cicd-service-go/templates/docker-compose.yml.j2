@@ -2,11 +2,11 @@ version: '3.9'
 
 networks:
   default:
-    name: cicd-network
+    name: cicd-network-03
     ipam:
       driver: default
       config:
-        - subnet: 172.105.0.0/16
+        - subnet: 172.111.0.0/16
 
 volumes:
   etcd-data:
