@@ -18,8 +18,8 @@ pipeline:
       image: docker:26.1.1-dind-alpine3.19
       branch: dev
       commands:
-        - docker build -t registry.local:5000/cicd-service-go:cicd-test .
-        - docker push registry.local:5000/cicd-service-go:cicd-test
+        - docker build -t registry.local:5000/cicd-service-go:cicd-test-01 .
+        - docker push registry.local:5000/cicd-service-go:cicd-test-01
 
     - name: Deploy to DEV
       image: registry.local:5000/cicd-ansible:latest

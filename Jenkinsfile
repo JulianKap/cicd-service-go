@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "registry.local:5000/cicd-service-go:jenkins-test"
+        DOCKER_IMAGE = "registry.local:5000/cicd-service-go:jenkins-test-01"
     }
 
     stages {
