@@ -31,7 +31,7 @@ build_docker_image:
       /kaniko/executor 
       --context $CI_PROJECT_DIR
       --dockerfile $CI_PROJECT_DIR/Dockerfile 
-      --destination registry.local:5000/cicd-service-go:gitlab-test-02
+      --destination registry.local:5000/cicd-service-go:gitlab-test-04
       --insecure
       --cache=true
 
