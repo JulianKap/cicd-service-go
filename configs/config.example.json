@@ -12,18 +12,18 @@
     "database": {
         "etcd": {
             "endpoints" : [
-                "http://127.0.0.1:2379"
+                "http://etcd:2379"
             ],
             "timeout_s": "5"
         },
         "vault": {
-            "addr": "http://127.0.0.1:8200",
-            "token": "token",
+            "addr": "http://192.168.122.30:8200",
+            "token": "1237fdfas35dSD^*)_23sd",
             "timeout_s": "60"
         }
     },
     "logging": {
-        "level": "debug"
+        "level": "info"
     },
     "schedule": {
         "cron_timer_s": 10,

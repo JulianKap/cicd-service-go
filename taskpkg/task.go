@@ -7,31 +7,18 @@ import (
 	"strings"
 )
 
-//var (
-//	taskWorkerInstance TaskWorker
-//)
-//
-//func GetWorker() *TaskWorker {
-//	return &taskWorkerInstance
-//}
-//
-//func NewWorker(hub worker.IWorkerHub) *TaskWorker {
-//	taskWorkerInstance = TaskWorker{
-//		TaskType:    CWorkerType,
-//		Running:     false,
-//		controlChan: make(chan int, 1),
-//		hub:         hub,
-//	}
-//	return &taskWorkerInstance
-//}
-
 func PrepareStepCommand(j sources.Job, s pipeline.Step) (string, error) {
 	var commands []string
 
 	// Базовые команды
 	commands = append(commands, "mkdir /job")
 	commands = append(commands, "cd /job")
-	commands = append(commands, "git clone "+j.URL)
+
+	if j.Branch != "" {
+		commands = append(commands, "git clone --branch "+j.Branch+" "+j.URL)
+	} else {
+		commands = append(commands, "git clone "+j.URL)
+	}
 
 	// Извлекаем путь из URL
 	repoPath := strings.TrimSuffix(j.URL, ".git") // Удаляем расширение .git, если оно есть
@@ -39,16 +26,18 @@ func PrepareStepCommand(j sources.Job, s pipeline.Step) (string, error) {
 
 	commands = append(commands, "cd "+repoName)
 
-	if j.Branch != "" {
-		commands = append(commands, "git switch "+j.Branch)
-	}
-
 	// Команды из пайплайна
 	for _, c := range s.Commands {
 		commands = append(commands, c)
 	}
 
-	return strings.Join(commands, " && "), nil
+	result := ""
+	for _, c := range commands {
+		result += c + " || exit 1\n"
+	}
+
+	//return strings.Join(commands, " && "), nil
+	return result, nil
 }
 
 // PrepareSubTasksStruct подготовить структуру шага

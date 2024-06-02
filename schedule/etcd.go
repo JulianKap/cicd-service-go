@@ -14,7 +14,7 @@ import (
 
 // GetKeyTasksWorker получение ключ всех заданий для воркера
 func GetKeyTasksWorker(m manager.Member) string {
-	return manager.Conf.Cluster.Namespace + constants.WORKERS + "/" + m.UUID + "/tasks"
+	return manager.Conf.Cluster.Namespace + constants.WORKERS + "/" + m.UUID + constants.TASKS
 }
 
 // getTasksForWorker получить список всех заданий для воркера

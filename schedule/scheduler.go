@@ -176,17 +176,6 @@ func tasksScheduler() (bool, error) {
 	return true, nil
 }
 
-// setTaskInHistory перенос задания в список истории
-func setTaskInHistory(t *taskpkg.Task) error {
-	log.Debug("setTaskInHistory #0: move task: ", t.ID, " in history list")
-
-	if err := taskpkg.SetHistoryTaskByProjectETCD(db.InstanceETCD, &sources.Project{ID: t.ProjectID}, t); err != nil {
-		log.Error("setTaskInHistory #1: ", err)
-		return err
-	}
-	return nil
-}
-
 // tasksSchedulerWorker планирование заданий воркером
 func tasksSchedulerWorker() (taskpkg.Tasks, error) {
 	var tasksInQueue taskpkg.Tasks
@@ -219,6 +208,17 @@ func tasksSchedulerWorker() (taskpkg.Tasks, error) {
 	}
 
 	return tasksInQueue, nil
+}
+
+// setTaskInHistory перенос задания в список истории
+func setTaskInHistory(t *taskpkg.Task) error {
+	log.Debug("setTaskInHistory #0: move task: ", t.ID, " in history list")
+
+	if err := taskpkg.SetHistoryTaskByProjectETCD(db.InstanceETCD, &sources.Project{ID: t.ProjectID}, t); err != nil {
+		log.Error("setTaskInHistory #1: ", err)
+		return err
+	}
+	return nil
 }
 
 // GetMemberWithMinTasks получение члена кластера с минимальным количеством заданий

@@ -1,0 +1,73 @@
+@startuml
+'top to bottom direction
+
+package "CI/CD Environment" {
+    node "Jenkins" {
+        [Jenkins VM1] as J1
+        [Jenkins VM2] as J2
+        [Jenkins VM3] as J3
+
+        J1 - J2
+        J2 -- J3
+        J3 -- J1
+    }
+
+    node "GitLab CI" {
+        [GitLab CI VM1] as G1
+        [GitLab CI VM2] as G2
+        [GitLab CI VM3] as G3
+
+        G1 - G2
+        G2 -- G3
+        G3 -- G1
+    }
+
+    node "CI/CD Service Go" {
+        [CI/CD Service Go VM1] as C1
+        [CI/CD Service Go VM2] as C2
+        [CI/CD Service Go VM3] as C3
+
+        C1 - C2
+        C2 -- C3
+        C3 -- C1
+    }
+
+    node "Etcd" {
+        interface ETCD_API
+
+        ETCD_API -- [Etcd VM1]
+        ETCD_API -- [Etcd VM2]
+        ETCD_API -- [Etcd VM3]
+
+        [Etcd VM1] - [Etcd VM2]
+        [Etcd VM2] -- [Etcd VM3]
+        [Etcd VM3] -- [Etcd VM1]
+    }
+}
+
+node "Test Environment" {
+    [Test VM for Jenkins VM]
+    [Test VM for GitLab CI VM]
+    [Test VM for Custom CI/CD VM]
+}
+
+node "Monitoring, Registry, Vault" {
+    [Monitoring VM] as M
+}
+
+C1 ..> ETCD_API
+C3 ..> ETCD_API
+C2 ..> ETCD_API
+
+M <-u.> [GitLab CI]
+M <-u..> [CI/CD Service Go]
+M <-u...> [Jenkins]
+
+
+[GitLab CI] -u.> [Test VM for GitLab CI VM]
+[CI/CD Service Go] -u.> [Test VM for Custom CI/CD VM]
+[Jenkins] -u.> [Test VM for Jenkins VM]
+
+
+
+@enduml
