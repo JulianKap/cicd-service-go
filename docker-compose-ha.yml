@@ -30,7 +30,7 @@ services:
   cicd-service-02:
     container_name: cicd-service-02
     build:
-      dockerfile: .
+      dockerfile: ./Dockerfile
     volumes:
       - ./configs/config.example.json:/app/config.json
       - /var/run/docker.sock:/var/run/docker.sock
@@ -43,7 +43,7 @@ services:
   cicd-service-03:
     container_name: cicd-service-03
     build:
-      dockerfile: .
+      dockerfile: ./Dockerfile
     volumes:
       - ./configs/config.example.json:/app/config.json
       - /var/run/docker.sock:/var/run/docker.sock

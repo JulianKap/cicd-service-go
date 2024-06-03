@@ -203,3 +203,58 @@ func HandleTasksGetHistoryList(ctx echo.Context) (err error) {
 		Tasks: tasks.Tasks,
 	})
 }
+
+func HandleTasksView(ctx echo.Context) error {
+
+	codeValidation, respValidation := sources.ValidatePermission()
+	if codeValidation != http.StatusOK {
+		return ctx.JSON(codeValidation, respValidation)
+	}
+
+	var project sources.Project
+	codeValPrj, respValPrj := sources.ValidateProjectById(ctx, &project, "id_project")
+	if codeValPrj != http.StatusOK {
+		return ctx.JSON(codeValPrj, respValPrj)
+	}
+
+	var tasks Tasks
+	if err := tasks.getTasksByProjectETCD(db.InstanceETCD, &project, true); err != nil {
+		log.Error("HandleTasksGetHistoryList #0: ", err)
+		return ctx.JSON(http.StatusInternalServerError, TasksResponse{
+			Message: "Error get tasks list",
+			Error:   utility.StringPtr(err.Error()),
+		})
+	}
+
+	//tasks := getTasks()
+	return ctx.Render(http.StatusOK, "tasks", tasks)
+}
+
+//func getTasks() Tasks {
+//	now := time.Now()
+//	tasks := taskpkg.Tasks{
+//		Tasks: []*Task{
+//			{
+//				ID:        1,
+//				ProjectID: 1,
+//				JobID:     1,
+//				Name:      "test-cicd",
+//				Status: taskpkg.TaskResult{
+//					Status:     taskpkg.Running,
+//					Message:    "Running",
+//					RetryCount: 0,
+//					RunningAt:  &now,
+//					ElapsedSec: 100,
+//					WorkerUUID: "worker-1",
+//					Steps: []taskpkg.SubTaskResult{
+//						{Name: "Build", Status: taskpkg.StepComplited, ElapsedSec: 30},
+//						{Name: "Test", Status: taskpkg.StepRunning, ElapsedSec: 70},
+//					},
+//				},
+//				CreateAt:               &now,
+//				NumberOfRetriesOnError: 0,
+//			},
+//		},
+//	}
+//	return tasks
+//}

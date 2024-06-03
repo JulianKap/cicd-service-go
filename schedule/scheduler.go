@@ -5,6 +5,7 @@ import (
 	"cicd-service-go/manager"
 	"cicd-service-go/sources"
 	"cicd-service-go/taskpkg"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -223,8 +224,11 @@ func setTaskInHistory(t *taskpkg.Task) error {
 
 // GetMemberWithMinTasks получение члена кластера с минимальным количеством заданий
 func GetMemberWithMinTasks(members manager.Members) (*manager.Member, error) {
-	memberCountTask := 0
-	var member manager.Member
+	var (
+		member          manager.Member
+		memberCountTask = -1
+	)
+
 	for _, m := range members.Members {
 		var t taskpkg.Tasks
 		if err := getTasksForWorker(db.InstanceETCD, m, &t); err != nil {
@@ -232,10 +236,15 @@ func GetMemberWithMinTasks(members manager.Members) (*manager.Member, error) {
 			continue
 		}
 
-		if len(t.Tasks) == 0 || len(t.Tasks) < memberCountTask {
+		if memberCountTask == -1 || len(t.Tasks) < memberCountTask {
 			memberCountTask = len(t.Tasks)
 			member = m
 		}
+	}
+
+	if memberCountTask == -1 {
+		log.Error("GetMemberWithMinTasks #1: error search member with min count tasks")
+		return nil, fmt.Errorf("no valid members found")
 	}
 
 	return &member, nil

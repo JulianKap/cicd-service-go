@@ -208,7 +208,7 @@ func delTaskByProjectETCD(cli *clientv3.Client, m *manager.Member, p *sources.Pr
 	}
 
 	var newTasksWorker taskpkg.Tasks
-	for _, task := range tasks.Tasks {
+	for _, task := range tasksWorker.Tasks {
 		if task.ID != t.ID {
 			newTasksWorker.Tasks = append(newTasksWorker.Tasks, task)
 		}
