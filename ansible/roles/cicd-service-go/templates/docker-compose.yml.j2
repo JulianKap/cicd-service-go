@@ -2,11 +2,11 @@ version: '3.9'
 
 networks:
   default:
-    name: cicd-network
+    name: cicd-network-02
     ipam:
       driver: default
       config:
-        - subnet: 172.105.0.0/16
+        - subnet: 172.115.0.0/16
 
 volumes:
   etcd-data:
@@ -41,8 +41,8 @@ services:
 #      - --initial-manager-token=etcd-manager
     volumes:
       - etcd-data:/data.etcd
-    ports:
-      - "2379:2379"
+    #ports:
+    #  - "2379:2379"
     restart: always
 
   vault:
@@ -51,8 +51,8 @@ services:
     environment:
       VAULT_ADDR: "http://0.0.0.0:8200"
       VAULT_DEV_ROOT_TOKEN_ID: {{ cicd_service_go_vault_root_token }}
-    ports:
-      - "8200:8200"
+    #ports:
+    #  - "8200:8200"
     volumes:
       - vault-data:/vault/data
     cap_add:

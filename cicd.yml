@@ -2,7 +2,7 @@ pipeline:
   steps:
     - name: Build
       image: golang:1.22.1
-      branch: dev
+      branch: test01
       commands:
         - go mod download
         - go mod verify
@@ -10,20 +10,20 @@ pipeline:
 
     - name: Test
       image: golang:1.22.1
-      branch: dev
+      branch: test01
       commands:
         - go test -v ./...
 
     - name: Build and Push docker image
       image: docker:26.1.1-dind-alpine3.19
-      branch: dev
+      branch: test01
       commands:
         - docker build -t registry.local:5000/cicd-service-go:cicd-test-01 .
         - docker push registry.local:5000/cicd-service-go:cicd-test-01
 
     - name: Deploy to DEV
       image: registry.local:5000/cicd-ansible:latest
-      branch: dev
+      branch: test01
       commands:
         - export ANSIBLE_HOST_KEY_CHECKING=False
         - cd ./ansible/
@@ -31,7 +31,7 @@ pipeline:
 
     - name: Destroy on DEV
       image: registry.local:5000/cicd-ansible:latest
-      branch: dev
+      branch: test01
       commands:
         - export ANSIBLE_HOST_KEY_CHECKING=False
         - cd ./ansible/
